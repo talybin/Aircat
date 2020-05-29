@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Aircat</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="jobs_fragment_label">Aircat</string>
+    <string name="create_job_fragment_label">Select Access Point</string>
+    <string name="next">Next</string>
+    <string name="no_jobs_yet">No jobs yet</string>
+    <string name="scanning">Scanning...</string>
+    <string name="hidden">hidden</string>
+</resources>
