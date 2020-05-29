@@ -1,12 +1,15 @@
 package com.talybin.aircat;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -140,6 +143,23 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
     }
 
     @Override
-    public void onClick(View view, ApInfo apInfo) {
+    public void onClick(ApInfo apInfo) {
+        ProgressDialog waitDialog = new ProgressDialog(getActivity());
+
+        waitDialog.setTitle(apInfo.getSSID());
+        waitDialog.setMessage(getString(R.string.getting_pmkid));
+        waitDialog.setCancelable(false);
+        waitDialog.setButton(
+                DialogInterface.BUTTON_NEGATIVE,
+                getString(android.R.string.cancel),
+                new DialogInterface.OnClickListener()
+        {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        waitDialog.show();
     }
 }

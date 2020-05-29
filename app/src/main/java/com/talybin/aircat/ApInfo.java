@@ -5,7 +5,7 @@ import android.net.wifi.ScanResult;
 import java.util.HashSet;
 import java.util.Set;
 
-class ApInfo {
+public class ApInfo {
 
     public boolean hidden;
     public String ssid;
@@ -21,6 +21,10 @@ class ApInfo {
         caps = new HashSet<>();
 
         setKnownCapabilities(sr);
+    }
+
+    String getSSID() {
+        return hidden ? MainActivity.getContext().getString(R.string.hidden) : ssid;
     }
 
     void merge(ScanResult sr) {

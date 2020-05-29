@@ -7,5 +7,6 @@
     <string name="next">Next</string>
     <string name="no_jobs_yet">No jobs yet</string>
     <string name="scanning">Scanning...</string>
-    <string name="hidden">hidden</string>
+    <string name="hidden">&lt;hidden&gt;</string>
+    <string name="getting_pmkid">Fetching PMKID. Please wait…</string>
 </resources>

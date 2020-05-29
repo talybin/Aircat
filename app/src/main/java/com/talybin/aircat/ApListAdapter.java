@@ -17,7 +17,7 @@ import java.util.List;
 public class ApListAdapter extends RecyclerView.Adapter<ApListAdapter.ApViewHolder> {
 
     interface ClickListener {
-        void onClick(View view, ApInfo apInfo);
+        void onClick(ApInfo apInfo);
     }
 
     private List<ApInfo> accessPoints;
@@ -58,10 +58,7 @@ public class ApListAdapter extends RecyclerView.Adapter<ApListAdapter.ApViewHold
 
             apInfo = rec;
 
-            if (rec.hidden)
-                ssid.setText("<hidden>");
-            else
-                ssid.setText(rec.ssid);
+            ssid.setText(rec.getSSID());
 
             // Sort capabilities before set
             List<String> caps = new ArrayList<>(rec.caps);
@@ -80,7 +77,7 @@ public class ApListAdapter extends RecyclerView.Adapter<ApListAdapter.ApViewHold
 
         @Override
         public void onClick(View v) {
-            clickListener.onClick(v, apInfo);
+            clickListener.onClick(apInfo);
         }
 
         @Override
