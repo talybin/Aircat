@@ -1,29 +1,57 @@
 package com.talybin.aircat;
 
+import android.os.AsyncTask;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-public class PmkIdFetcher extends RootShell implements Runnable {
+public class FetchPmkIdTask extends AsyncTask<Void, String, String> {
 
-    private static final String tcpdumpBinaryPath = "/data/data/com.talybin.aircat/bin/tcpdump";
+    private static final String tcpdumpPath = "/data/data/com.talybin.aircat/executables/tcpdump";
 
-    public PmkIdFetcher() {
+    private RootShell rootShell;
+    private String tcpdumpCmd;
+    private String lastError;
+
+    public FetchPmkIdTask() {
         super();
+
+        this.lastError = null;
+        this.rootShell = new RootShell();
+        //this.tcpdumpCmd = tcpdumpPath + " " + generateEapolParams() + "&";
+        this.tcpdumpCmd = "ls /";
+    }
+
+    String getLastError() {
+        return lastError;
     }
 
     @Override
-    public void run() {
-        int ret = openShell();
-        if (ret != 0)
-            return;
+    protected void onPreExecute() {
+        int ret = rootShell.openShell();
+        if (ret != 0) {
+            rootShell = null;
+            lastError = "failed to execute root shell";
+        }
 
-        ret = runCommand(tcpdumpBinaryPath + generateEapolParams());
+    }
+
+    @Override
+    protected String doInBackground(Void... voids) {
+        if (rootShell == null)
+            return null;
+
+        int ret = rootShell.runCommand(tcpdumpCmd);
+        if (ret != 0) {
+            lastError = "failed to execute command";
+            return null;
+        }
         if (ret == 0) {
             try {
-                process.waitFor();
-                if (process.exitValue() != 0) {
+                rootShell.getProcess().waitFor();
+                if (rootShell.getProcess().exitValue() != 0) {
                     // error
                 }
             } catch (InterruptedException e) {
@@ -31,11 +59,17 @@ public class PmkIdFetcher extends RootShell implements Runnable {
             }
         }
 
-        closeShell();
+        return "ok";
     }
 
-    public void abort() {
-        closeShell();
+    @Override
+    protected void onProgressUpdate(String... values) {
+    }
+
+    @Override
+    protected void onPostExecute(String result) {
+        if (rootShell != null)
+            rootShell.closeShell();
     }
 
     private static String generateEapolParams() {
@@ -43,7 +77,7 @@ public class PmkIdFetcher extends RootShell implements Runnable {
         final String filter = " \"ether proto 0x888e and ether[0x15:2] > 0\"";
 
         // Defining a String which will contain the parameters.
-        return  " -i " + getWirelessInterface()  // Recognizing the chosen interface
+        return  "-i " + getWirelessInterface()  // Recognizing the chosen interface
                 + " -c 1"       // Read one packet
                 + " -s 200"     // Set snaplen size to 200, EAPOL is just below this
                 + " -entqx"     // Dump payload as hex

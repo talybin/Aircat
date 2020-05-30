@@ -44,9 +44,13 @@ public class RootShell {
 	/**
 	 * RootShell class destructor. Closes the shell if its not already closed.
 	 */
-	protected void finalize() {
+	public void finalize() {
 		if (process != null)
 			closeShell();
+	}
+
+	Process getProcess() {
+		return process;
 	}
 
 	/**
