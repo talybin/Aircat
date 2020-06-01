@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -44,7 +45,14 @@ public class MainActivity extends AppCompatActivity {
             // After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         }
 
-
+        // Install binaries
+        if (!Utils.installBinary(context, R.raw.tcpdump, "tcpdump")) {
+            new AlertDialog.Builder(context)
+                    .setTitle(R.string.extraction_error)
+                    .setMessage(R.string.extraction_error_msg)
+                    .setNegativeButton(android.R.string.ok, null)
+                    .show();
+        }
     }
 
     @Override

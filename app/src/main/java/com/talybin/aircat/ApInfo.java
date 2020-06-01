@@ -1,6 +1,8 @@
 package com.talybin.aircat;
 
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,6 +32,26 @@ public class ApInfo {
     void merge(ScanResult sr) {
         level = (sr.level + level) / 2;
         setKnownCapabilities(sr);
+    }
+
+    void connect(WifiManager wifiManager) {
+        WifiConfiguration conf = new WifiConfiguration();
+
+        conf.hiddenSSID = this.hidden;
+        conf.preSharedKey = "\"12345678\"";
+        if (this.hidden) {
+            conf.SSID = this.bssid;
+            conf.BSSID = "\"" + this.bssid + "\"";
+        }
+        else
+            conf.SSID = "\"" + this.ssid + "\"";
+
+        int netId = wifiManager.addNetwork(conf);
+
+        wifiManager.disconnect();
+        wifiManager.enableNetwork(netId, true);
+        wifiManager.reconnect();
+
     }
 
     private void setKnownCapabilities(ScanResult sr)

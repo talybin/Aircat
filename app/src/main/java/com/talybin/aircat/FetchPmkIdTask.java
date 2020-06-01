@@ -1,65 +1,61 @@
 package com.talybin.aircat;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Objects;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
-public class FetchPmkIdTask extends AsyncTask<Void, String, String> {
+public class FetchPmkIdTask extends AsyncTask<Void, String, PmkIdInfo> {
 
-    private static final String tcpdumpPath = "/data/data/com.talybin.aircat/executables/tcpdump";
-
-    private RootShell rootShell;
-    private String tcpdumpCmd;
-    private String lastError;
-
-    public FetchPmkIdTask() {
-        super();
-
-        this.lastError = null;
-        this.rootShell = new RootShell();
-        //this.tcpdumpCmd = tcpdumpPath + " " + generateEapolParams() + "&";
-        this.tcpdumpCmd = "ls /";
+    public interface CompleteListener {
+        void onComplete(FetchPmkIdTask task, PmkIdInfo info);
     }
 
-    String getLastError() {
-        return lastError;
+    private static final String LOG_TAG = "FetchPmkIdTask";
+    private static final String tcpdumpPath = "/data/data/com.talybin.aircat/files/tcpdump";
+
+    private CompleteListener listener;
+    private Process process = null;
+
+    public FetchPmkIdTask(CompleteListener listener) {
+        super();
+        this.listener = listener;
     }
 
     @Override
     protected void onPreExecute() {
-        int ret = rootShell.openShell();
-        if (ret != 0) {
-            rootShell = null;
-            lastError = "failed to execute root shell";
-        }
-
+        process = null;
     }
 
     @Override
-    protected String doInBackground(Void... voids) {
-        if (rootShell == null)
-            return null;
+    protected PmkIdInfo doInBackground(Void... voids) {
 
-        int ret = rootShell.runCommand(tcpdumpCmd);
-        if (ret != 0) {
-            lastError = "failed to execute command";
-            return null;
+        InputStreamReader iss = null;
+        PmkIdInfo info = null;
+
+        try {
+            process = Runtime.getRuntime().exec(
+                    "su -c " + tcpdumpPath + " " + generateEapolParams());
+            iss = new InputStreamReader(process.getInputStream());
+            info = PmkIdInfo.fromStream(iss);
         }
-        if (ret == 0) {
-            try {
-                rootShell.getProcess().waitFor();
-                if (rootShell.getProcess().exitValue() != 0) {
-                    // error
-                }
-            } catch (InterruptedException e) {
-                // error
+        catch (Exception e) {
+            if (!isCancelled()) {
+                Log.e(LOG_TAG, "error: " + e.toString());
+                // Abort
+                if (process != null)
+                    process.destroy();
             }
         }
+        finally {
+            if (iss != null)
+                try { iss.close(); } catch (IOException ignored) {}
+            process = null;
+        }
 
-        return "ok";
+        Log.d(LOG_TAG, "process ended");
+        return info;
     }
 
     @Override
@@ -67,9 +63,18 @@ public class FetchPmkIdTask extends AsyncTask<Void, String, String> {
     }
 
     @Override
-    protected void onPostExecute(String result) {
-        if (rootShell != null)
-            rootShell.closeShell();
+    protected void onPostExecute(PmkIdInfo result) {
+        listener.onComplete(this, result);
+    }
+
+    public void abort() {
+        if (process != null) {
+            // Set canceled flag
+            cancel(false);
+            // TODO at this point process may be null, post somehow to thread instead
+            process.destroy();
+            process = null;
+        }
     }
 
     private static String generateEapolParams() {
@@ -77,37 +82,10 @@ public class FetchPmkIdTask extends AsyncTask<Void, String, String> {
         final String filter = " \"ether proto 0x888e and ether[0x15:2] > 0\"";
 
         // Defining a String which will contain the parameters.
-        return  "-i " + getWirelessInterface()  // Recognizing the chosen interface
+        return  "-i " + Utils.getWirelessInterface()  // Recognizing the chosen interface
                 + " -c 1"       // Read one packet
                 + " -s 200"     // Set snaplen size to 200, EAPOL is just below this
                 + " -entqx"     // Dump payload as hex
                 + filter;
-    }
-
-    // Try to find wireless interface.
-    // Return a string with name of wireless interface, otherwise, if
-    // not found or found more than one, return "any".
-    private static String getWirelessInterface() {
-        String interfaceName = null;
-        String devListPath = "/sys/class/net";
-        File folder = new File(devListPath);
-
-        // Iterate over all interfaces
-        for (File devFile : Objects.requireNonNull(folder.listFiles())) {
-            // Check "/sys/class/net/<dev>/wireless"
-            boolean isWireless = Files.exists(
-                    Paths.get(devListPath, devFile.getName(), "wireless"));
-            if (isWireless) {
-                if (interfaceName != null) {
-                    // Found more than one
-                    interfaceName = null;
-                    break;
-                }
-                // First match
-                interfaceName = devFile.getName();
-            }
-        }
-
-        return (interfaceName != null) ? interfaceName : "any";
     }
 }
