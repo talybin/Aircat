@@ -1,17 +1,12 @@
 package com.talybin.aircat;
 
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
-import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,7 +15,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -148,64 +142,11 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
 
     @Override
     public void onClick(final ApInfo apInfo) {
-        final Context context = getContext();
-        final ProgressDialog waitDialog = new ProgressDialog(context);
-        final Handler giveUpHandler = new Handler();
-
-        // Create PMKID fetcher
-        final FetchPmkIdTask task = new FetchPmkIdTask(new FetchPmkIdTask.CompleteListener() {
+        new FetchPmkId(requireContext(), apInfo, new FetchPmkId.Listener() {
             @Override
-            public void onComplete(FetchPmkIdTask task, PmkIdInfo info) {
-                waitDialog.dismiss();
-                giveUpHandler.removeCallbacksAndMessages(null);
-
-                if (info == null) {
-                    Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show();
-                }
-                else if (!info.isValid()) {
-                    Toast.makeText(context, getString(R.string.pmkid_not_supported, apInfo.getSSID()), Toast.LENGTH_LONG).show();
-                }
-                else { // Successfully fetched PMKID
-                    Log.d("CreateJobFragment", "---> ap mac [" + info.apMac + "]");
-                    Log.d("CreateJobFragment", "---> client mac [" + info.clientMac + "]");
-                    Log.d("CreateJobFragment", "---> pmkid [" + info.pmkId + "]");
-
-                    Toast.makeText(context, "pmkid: " + info.pmkId, Toast.LENGTH_LONG).show();
-                }
+            public void onReceive(Eapol eapol) {
+                JobManager.getInstance().add(apInfo.update(eapol));
             }
         });
-
-        // Show dialog while we waiting
-        waitDialog.setTitle(apInfo.getSSID());
-        waitDialog.setMessage(getString(R.string.getting_pmkid));
-        waitDialog.setCancelable(false);
-        waitDialog.setButton(
-                DialogInterface.BUTTON_NEGATIVE,
-                getString(android.R.string.cancel),
-                new DialogInterface.OnClickListener()
-                {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        giveUpHandler.removeCallbacksAndMessages(null);
-                        task.abort();
-                    }
-                });
-
-        // Give up after some amount of time
-        Runnable giveUpTask = new Runnable() {
-            @Override
-            public void run() {
-                waitDialog.dismiss();
-                task.abort();
-                Toast.makeText(context, getString(R.string.no_answer, apInfo.getSSID()), Toast.LENGTH_LONG).show();
-            }
-        };
-
-        // Start everything up
-        waitDialog.show();
-        giveUpHandler.postDelayed(giveUpTask, 10000);
-        task.execute();
-        apInfo.connect(wifiManager);
     }
 }

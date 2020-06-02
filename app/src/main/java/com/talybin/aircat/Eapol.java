@@ -3,7 +3,7 @@ package com.talybin.aircat;
 import java.io.InputStreamReader;
 import java.util.Scanner;
 
-public class PmkIdInfo {
+public class Eapol {
 
     public String apMac = null;
     public String clientMac = null;
@@ -22,9 +22,9 @@ public class PmkIdInfo {
         return false;
     }
 
-    public static PmkIdInfo fromStream(InputStreamReader irs) {
+    public static Eapol fromStream(InputStreamReader irs) {
 
-        PmkIdInfo info = new PmkIdInfo();
+        Eapol info = new Eapol();
         Scanner scanner = new Scanner(irs);
 
         // Initial line example:
@@ -39,11 +39,11 @@ public class PmkIdInfo {
 
         // Data lines example:
         //	0x0010:  0166 03d4 9ecb 2c4b e465 cd40 0010 4870
-        String data = "";
+        StringBuilder data = new StringBuilder();
         while (scanner.hasNext()) {
             String token = scanner.next();
             if (!token.startsWith("0x"))
-                data += token;
+                data.append(token);
         }
 
         scanner.close();

@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-public class JobsFragment extends Fragment {
+public class JobsFragment extends Fragment implements JobManager.Listener {
 
     @Override
     public View onCreateView(
@@ -39,5 +40,13 @@ public class JobsFragment extends Fragment {
                         .navigate(R.id.action_JobsFragment_to_CreateJobFragment);
             }
         });
+
+        // Listen to job list changes
+        JobManager.getInstance().addListener(this);
+    }
+
+    @Override
+    public void onNewJob() {
+        Log.d("JobsFragment", "----> new job added");
     }
 }

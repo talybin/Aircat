@@ -6,10 +6,10 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class FetchPmkIdTask extends AsyncTask<Void, String, PmkIdInfo> {
+public class GetEapolTask extends AsyncTask<Void, String, Eapol> {
 
     public interface CompleteListener {
-        void onComplete(FetchPmkIdTask task, PmkIdInfo info);
+        void onComplete(GetEapolTask task, Eapol info);
     }
 
     private static final String LOG_TAG = "FetchPmkIdTask";
@@ -18,7 +18,7 @@ public class FetchPmkIdTask extends AsyncTask<Void, String, PmkIdInfo> {
     private CompleteListener listener;
     private Process process = null;
 
-    public FetchPmkIdTask(CompleteListener listener) {
+    public GetEapolTask(CompleteListener listener) {
         super();
         this.listener = listener;
     }
@@ -29,29 +29,28 @@ public class FetchPmkIdTask extends AsyncTask<Void, String, PmkIdInfo> {
     }
 
     @Override
-    protected PmkIdInfo doInBackground(Void... voids) {
+    protected Eapol doInBackground(Void... voids) {
 
         InputStreamReader iss = null;
-        PmkIdInfo info = null;
+        Eapol info = null;
 
         try {
             process = Runtime.getRuntime().exec(
                     "su -c " + tcpdumpPath + " " + generateEapolParams());
             iss = new InputStreamReader(process.getInputStream());
-            info = PmkIdInfo.fromStream(iss);
+            info = Eapol.fromStream(iss);
         }
         catch (Exception e) {
             if (!isCancelled()) {
                 Log.e(LOG_TAG, "error: " + e.toString());
                 // Abort
-                if (process != null)
+                if (process != null && process.isAlive())
                     process.destroy();
             }
         }
         finally {
             if (iss != null)
                 try { iss.close(); } catch (IOException ignored) {}
-            process = null;
         }
 
         Log.d(LOG_TAG, "process ended");
@@ -63,17 +62,15 @@ public class FetchPmkIdTask extends AsyncTask<Void, String, PmkIdInfo> {
     }
 
     @Override
-    protected void onPostExecute(PmkIdInfo result) {
+    protected void onPostExecute(Eapol result) {
         listener.onComplete(this, result);
     }
 
     public void abort() {
-        if (process != null) {
+        if (process != null && process.isAlive()) {
             // Set canceled flag
             cancel(false);
-            // TODO at this point process may be null, post somehow to thread instead
             process.destroy();
-            process = null;
         }
     }
 

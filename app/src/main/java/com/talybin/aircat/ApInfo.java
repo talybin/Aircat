@@ -15,6 +15,9 @@ public class ApInfo {
     public int level;
     public Set<String> caps;
 
+    public String clientMac = null;
+    public String pmkId = null;
+
     ApInfo(ScanResult sr) {
         ssid = sr.SSID;
         hidden = ssid.isEmpty();
@@ -34,7 +37,15 @@ public class ApInfo {
         setKnownCapabilities(sr);
     }
 
-    void connect(WifiManager wifiManager) {
+    ApInfo update(Eapol eapol) {
+        bssid = eapol.apMac;
+        clientMac = eapol.clientMac;
+        pmkId = eapol.pmkId;
+
+        return this;
+    }
+
+    int connect(WifiManager wifiManager) {
         WifiConfiguration conf = new WifiConfiguration();
 
         conf.hiddenSSID = this.hidden;
@@ -46,12 +57,13 @@ public class ApInfo {
         else
             conf.SSID = "\"" + this.ssid + "\"";
 
-        int netId = wifiManager.addNetwork(conf);
+        int networkId = wifiManager.addNetwork(conf);
 
         wifiManager.disconnect();
-        wifiManager.enableNetwork(netId, true);
+        wifiManager.enableNetwork(networkId, true);
         wifiManager.reconnect();
 
+        return networkId;
     }
 
     private void setKnownCapabilities(ScanResult sr)
