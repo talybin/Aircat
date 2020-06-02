@@ -7,7 +7,7 @@ import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.transition.ChangeBounds;
@@ -64,14 +65,14 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
         apList.setAdapter(adapter);
 
         // Empty view (visible when ap list is empty)
-        emptyView = view.findViewById(R.id.ap_empty_list);
+        emptyView = view.findViewById(R.id.ap_empty_view);
 
         // Wifi manager
         wifiManager = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
 
         // Enable wifi if not already
         if (!wifiManager.isWifiEnabled()) {
-            Toast.makeText(ctx, "Enabling wifi", Toast.LENGTH_LONG).show();
+            Toast.makeText(ctx, R.string.enabling_wifi, Toast.LENGTH_LONG).show();
             wifiManager.setWifiEnabled(true);
         }
 
@@ -146,7 +147,13 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
             @Override
             public void onReceive(Eapol eapol) {
                 JobManager.getInstance().add(apInfo.update(eapol));
+                goBack();
             }
         });
+    }
+
+    private void goBack() {
+        NavHostFragment.findNavController(this)
+                .navigate(R.id.action_CreateJobFragment_to_JobsFragment);
     }
 }

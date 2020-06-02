@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="10dp"
+    android:paddingVertical="5dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/job_item_ssid"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/job_item_pmkid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PMKID: 1f02aa3d48e4fef4c2b5f1a1aad06176"
+            android:textColor="#8E8E8E" />
+
+        <TextView
+            android:id="@+id/job_item_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status: Not running"
+            android:textColor="#8E8E8E" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -25,6 +25,7 @@
 
         <action
             android:id="@+id/action_CreateJobFragment_to_JobsFragment"
-            app:destination="@id/JobsFragment" />
+            app:destination="@id/JobsFragment"
+            app:enterAnim="@android:anim/slide_in_left" />
     </fragment>
 </navigation>
