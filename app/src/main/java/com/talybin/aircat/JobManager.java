@@ -39,8 +39,7 @@ public class JobManager {
         return jobs;
     }
 
-    public void add(ApInfo apInfo) {
-        Job job = new Job(apInfo);
+    public void add(Job job) {
         jobs.add(job);
 
         Log.d("JobManager::add", "---> ap mac [" + job.apMac + "]");
@@ -51,5 +50,9 @@ public class JobManager {
         // Notify others
         for (Listener listener : listeners)
             listener.onNewJob(job);
+    }
+
+    public void add(ApInfo apInfo) {
+        add(new Job(apInfo));
     }
 }

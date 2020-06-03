@@ -7,7 +7,7 @@ import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,7 +37,11 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
     private RecyclerView.Adapter adapter;
     private TextView emptyView;
 
+    private Context context;
+
     private WifiManager wifiManager;
+    private Timer scanTimer;
+    private BroadcastReceiver scanResultsReceiver;
 
     private List<ApInfo> scanResults = new ArrayList<>();
 
@@ -53,11 +57,11 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Context ctx = requireActivity();
+        context = requireActivity();
 
         // Job list
         apList = view.findViewById(R.id.ap_list);
-        apList.setLayoutManager(new LinearLayoutManager(ctx));
+        apList.setLayoutManager(new LinearLayoutManager(context));
         apList.setHasFixedSize(true);
 
         // Specify an adapter
@@ -68,24 +72,27 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
         emptyView = view.findViewById(R.id.ap_empty_view);
 
         // Wifi manager
-        wifiManager = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 
         // Enable wifi if not already
         if (!wifiManager.isWifiEnabled()) {
-            Toast.makeText(ctx, R.string.enabling_wifi, Toast.LENGTH_LONG).show();
+            Toast.makeText(context, R.string.enabling_wifi, Toast.LENGTH_LONG).show();
             wifiManager.setWifiEnabled(true);
         }
 
         // Populate scan results on event
-        ctx.registerReceiver(new BroadcastReceiver() {
+        scanResultsReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 getScanResults();
             }
-        }, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        };
+        context.registerReceiver(
+                scanResultsReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
         // Initiate scan every 10 seconds
-        new Timer().schedule(new TimerTask() {
+        scanTimer = new Timer();
+        scanTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 wifiManager.startScan();
@@ -94,6 +101,14 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
 
         // Initially read in current scan results
         getScanResults();
+    }
+
+    @Override
+    public void onDestroyView() {
+        scanTimer.cancel();
+        context.unregisterReceiver(scanResultsReceiver);
+
+        super.onDestroyView();
     }
 
     private void getScanResults()
@@ -153,7 +168,6 @@ public class CreateJobFragment extends Fragment implements ApListAdapter.ClickLi
     }
 
     private void goBack() {
-        NavHostFragment.findNavController(this)
-                .navigate(R.id.action_CreateJobFragment_to_JobsFragment);
+        NavHostFragment.findNavController(this).popBackStack();
     }
 }

@@ -5,7 +5,6 @@
     <string name="jobs_fragment_label">Aircat</string>
     <string name="create_job_fragment_label">Select Access Point</string>
     <string name="next">Next</string>
-    <string name="no_jobs_yet">No jobs yet</string>
     <string name="enabling_wifi">Enabling WiFi</string>
     <string name="scanning">Scanning...</string>
     <string name="hidden">&lt;hidden&gt;</string>
@@ -15,4 +14,6 @@
     <string name="error_occurred">Error occurred</string>
     <string name="pmkid_not_supported">%1$s do not support PMKID.</string>
     <string name="no_answer">No answer from %1$s</string>
+    <string name="complete_percent">Complete: %1$d%%</string>
+    <string name="not_running">Not running</string>
 </resources>

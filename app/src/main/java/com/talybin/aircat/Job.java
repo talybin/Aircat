@@ -13,4 +13,9 @@ public class Job {
         ssid = apInfo.ssid;
         pmkId = apInfo.pmkId;
     }
+
+    // Constructor for testing
+    public Job() {
+        apMac = clientMac = ssid = pmkId = null;
+    }
 }

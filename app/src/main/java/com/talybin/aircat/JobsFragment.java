@@ -11,7 +11,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavAction;
+import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.NavigationUI;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,7 +24,8 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
 
     private RecyclerView jobList;
     private RecyclerView.Adapter adapter;
-    private TextView emptyView;
+
+    private NavController navController;
 
     private JobManager jobManager;
 
@@ -38,6 +42,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         super.onViewCreated(view, savedInstanceState);
 
         Context ctx = requireActivity();
+        navController = NavHostFragment.findNavController(JobsFragment.this);
 
         jobManager = JobManager.getInstance();
 
@@ -47,46 +52,44 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         jobList.setHasFixedSize(true);
 
         // Specify an adapter
-        adapter = new JobListAdapter();
+        // Navigate to job details on view click
+        adapter = new JobListAdapter(new JobListAdapter.ClickListener() {
+            @Override
+            public void onClick(Job job) {
+                navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment);
+            }
+        });
         jobList.setAdapter(adapter);
-
-        // Empty view (visible when ap list is empty)
-        emptyView = view.findViewById(R.id.jobs_empty_view);
 
         // Create new job button
         FloatingActionButton fab = view.findViewById(R.id.createNewJobBut);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                NavHostFragment.findNavController(JobsFragment.this)
-                        .navigate(R.id.action_JobsFragment_to_CreateJobFragment);
+                navController.navigate(R.id.action_JobsFragment_to_CreateJobFragment);
             }
         });
 
         // Listen to job list changes
         jobManager.addListener(this);
+
+        // Test
+        Job test = new Job();
+        test.apMac = "c4:72:95:64:51:26";
+        test.clientMac = "6c:c7:ec:95:3d:63";
+        test.pmkId = "5265b2887ac349c4096eb7c2e4aaba61";
+        test.ssid = "IterationRentalsWifi";
+        jobManager.add(test);
+    }
+
+    @Override
+    public void onDestroyView() {
+        jobManager.removeListener(this);
+        super.onDestroyView();
     }
 
     @Override
     public void onNewJob(Job job) {
-        Log.d("JobsFragment::onNewJob", "---> nr jobs: " + jobManager.getJobs().size());
-        if (jobManager.getJobs().size() == 1) {
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d("JobsFragment::onNewJob", "---> after: job list visible " + jobList.getVisibility());
-                    Log.d("JobsFragment::onNewJob", "---> after: empty view visible " + emptyView.getVisibility());
-                    jobList.setVisibility(View.VISIBLE);
-                    emptyView.setVisibility(View.GONE);
-                }
-            }, 3000);
-            jobList.setVisibility(View.VISIBLE);
-            emptyView.setVisibility(View.GONE);
-            Log.d("JobsFragment::onNewJob", "---> job list visible " + jobList.getVisibility());
-            Log.d("JobsFragment::onNewJob", "---> empty view visible " + emptyView.getVisibility());
-            //jobList.postInvalidate();
-            //emptyView.postInvalidate();
-        }
         adapter.notifyDataSetChanged();
     }
 }

@@ -1,5 +1,6 @@
 package com.talybin.aircat;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,15 +11,24 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewHolder> {
 
+    interface ClickListener {
+        void onClick(Job job);
+    }
+
     private JobManager jobManager;
+    private ClickListener clickListener;
 
     static class JobViewHolder
             extends RecyclerView.ViewHolder
-            implements View.OnClickListener, View.OnLongClickListener
     {
-        TextView ssid;
-        TextView pmkId;
-        TextView status;
+        private TextView ssid;
+        private TextView pmkId;
+        private TextView status;
+        private TextView complete;
+        private TextView macAp;
+        private TextView macClient;
+
+        private Job job;
 
         JobViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -26,27 +36,35 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewH
             ssid = (TextView)itemView.findViewById(R.id.job_item_ssid);
             pmkId = (TextView)itemView.findViewById(R.id.job_item_pmkid);
             status = (TextView)itemView.findViewById(R.id.job_item_status);
+            complete = (TextView)itemView.findViewById(R.id.job_item_complete);
+            macAp = (TextView)itemView.findViewById(R.id.job_item_mac_ap);
+            macClient = (TextView)itemView.findViewById(R.id.job_item_mac_client);
+
+            job = null;
         }
 
         void bindData(Job job) {
+            Context context = this.itemView.getContext();
+            this.job = job;
+
             ssid.setText(job.ssid);
-            pmkId.setText("PMKID: " + job.pmkId);
-            status.setText("Status: Not running");
+            pmkId.setText(job.pmkId);
+            //status.setText("Status: Not running");
+            complete.setText(context.getString(R.string.complete_percent, 0));
+            macAp.setText(job.apMac);
+            macClient.setText(job.clientMac);
         }
 
-        @Override
-        public void onClick(View v) {
-        }
-
-        @Override
-        public boolean onLongClick(View v) {
-            return false;
+        public Job getJob() {
+            return job;
         }
     }
 
-    public JobListAdapter() {
+    public JobListAdapter(ClickListener clickListener) {
         super();
-        jobManager = JobManager.getInstance();
+
+        this.jobManager = JobManager.getInstance();
+        this.clickListener = clickListener;
     }
 
     @NonNull
@@ -54,7 +72,16 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewH
     public JobViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         // Create a new view
         View view = LayoutInflater.from(parent.getContext()).inflate(viewType, parent, false);
-        return new JobListAdapter.JobViewHolder(view);
+        final JobViewHolder holder = new JobViewHolder(view);
+
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clickListener.onClick(holder.getJob());
+            }
+        });
+
+        return holder;
     }
 
     @Override
