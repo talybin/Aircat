@@ -21,6 +21,11 @@ public class JobDetailsFragment extends Fragment {
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        Bundle args = getArguments();
+        //args.
+        //LinkedHashMap in JobManager?
+        // TODO set label
     }
 
     @Override

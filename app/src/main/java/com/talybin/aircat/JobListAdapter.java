@@ -10,7 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewHolder> {
+public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface ClickListener {
         void onClick(Job job);
@@ -18,6 +18,13 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewH
 
     private JobManager jobManager;
     private ClickListener clickListener;
+
+    static class EmptyViewHolder extends RecyclerView.ViewHolder {
+
+        EmptyViewHolder(@NonNull View itemView) {
+            super(itemView);
+        }
+    }
 
     static class JobViewHolder
             extends RecyclerView.ViewHolder
@@ -72,33 +79,37 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewH
 
     @NonNull
     @Override
-    public JobViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         // Create a new view
         View view = LayoutInflater.from(parent.getContext()).inflate(viewType, parent, false);
-        final JobViewHolder holder = new JobViewHolder(view);
-
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clickListener.onClick(holder.getJob());
-            }
-        });
-
-        return holder;
+        if (viewType == R.layout.job_list_empty)
+            return new EmptyViewHolder(view);
+        else {
+            final JobViewHolder holder = new JobViewHolder(view);
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    clickListener.onClick(holder.getJob());
+                }
+            });
+            return holder;
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull JobViewHolder holder, int position) {
-        holder.bindData(jobManager.getJobs().get(position));
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof JobViewHolder)
+            ((JobViewHolder)holder).bindData(jobManager.getJobs().get(position));
     }
 
     @Override
     public int getItemCount() {
-        return jobManager.getJobs().size();
+        return Math.max(1, jobManager.getJobs().size());
     }
 
     @Override
     public int getItemViewType(int pos) {
-        return R.layout.job_list_item;
+        return jobManager.getJobs().size() > 0 ?
+                R.layout.job_list_item : R.layout.job_list_empty;
     }
 }

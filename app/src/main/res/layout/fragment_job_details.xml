@@ -34,7 +34,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="ACCESS POINT MAC ADDRESS"
+                    android:text="Access point MAC address"
+                    android:textAllCaps="true"
                     android:textColor="#a0a0a0"
                     android:textSize="10sp" />
 
@@ -68,7 +69,8 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="CLIENT MAC ADDRESS"
+                    android:text="Client MAC address"
+                    android:textAllCaps="true"
                     android:textColor="#a0a0a0"
                     android:textSize="10sp" />
 
@@ -103,6 +105,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="PMKID"
+                    android:textAllCaps="true"
                     android:textColor="#a0a0a0"
                     android:textSize="10sp" />
 
@@ -136,7 +139,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="WORDLIST FILE"
+                    android:text="Wordlist"
+                    android:textAllCaps="true"
                     android:textColor="#a0a0a0"
                     android:textSize="10sp" />
 

@@ -18,4 +18,8 @@ public class Job {
     public Job() {
         apMac = clientMac = ssid = pmkId = null;
     }
+
+    //public String getHash() {
+    //    return pmkId;
+    //}
 }

@@ -35,8 +35,7 @@
     <fragment
         android:id="@+id/jobDetailsFragment"
         android:name="com.talybin.aircat.JobDetailsFragment"
-        android:label="fragment_job_details"
-        tools:layout="@layout/fragment_job_details" >
+        tools:layout="@layout/fragment_job_details">
         <action
             android:id="@+id/action_jobDetailsFragment_to_JobsFragment"
             app:destination="@id/JobsFragment" />

@@ -7,12 +7,13 @@
     <string name="next">Next</string>
     <string name="enabling_wifi">Enabling WiFi</string>
     <string name="scanning">Scanning...</string>
+    <string name="no_jobs_yet">No jobs yet</string>
     <string name="hidden">&lt;hidden&gt;</string>
     <string name="getting_pmkid">Fetching PMKID. Please wait…</string>
     <string name="extraction_error">Could not install tools</string>
     <string name="extraction_error_msg">Tools needed to run application failed to install. Application may not work properly.</string>
     <string name="error_occurred">Error occurred</string>
-    <string name="pmkid_not_supported">%1$s do not support PMKID.</string>
+    <string name="pmkid_not_supported">%1$s do not support PMKID</string>
     <string name="no_answer">No answer from %1$s</string>
     <string name="complete_percent">Complete: %1$d%%</string>
     <string name="not_running">Not running</string>

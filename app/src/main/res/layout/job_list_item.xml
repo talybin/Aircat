@@ -27,7 +27,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="4dip"
+        android:layout_marginBottom="6dip"
         android:orientation="horizontal">
 
         <TextView
@@ -63,13 +63,13 @@
         android:textSize="12sp" />
 
     <TextView
-        android:id="@+id/job_item_spent_time"
+        android:id="@+id/job_item_est_time"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:drawableStart="@drawable/ic_time_16dp"
         android:drawablePadding="4dp"
-        android:text="00:15:39"
+        android:text="@android:string/unknownName"
         android:textColor="#a0a0a0"
         android:textSize="12sp" />
 
