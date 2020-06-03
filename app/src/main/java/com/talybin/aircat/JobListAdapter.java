@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -27,6 +28,7 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewH
         private TextView complete;
         private TextView macAp;
         private TextView macClient;
+        private ProgressBar progressBar;
 
         private Job job;
 
@@ -39,6 +41,7 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.JobViewH
             complete = (TextView)itemView.findViewById(R.id.job_item_complete);
             macAp = (TextView)itemView.findViewById(R.id.job_item_mac_ap);
             macClient = (TextView)itemView.findViewById(R.id.job_item_mac_client);
+            progressBar = (ProgressBar)itemView.findViewById(R.id.job_item_progress_bar);
 
             job = null;
         }

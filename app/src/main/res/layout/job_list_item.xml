@@ -27,7 +27,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="6dip"
+        android:layout_marginBottom="4dip"
         android:orientation="horizontal">
 
         <TextView
@@ -52,39 +52,73 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/job_item_wordlist"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:drawableStart="@drawable/ic_wordlist_16dp"
+        android:drawablePadding="4dp"
+        android:text="Built-in (3.254 words)"
+        android:textColor="#a0a0a0"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/job_item_spent_time"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:drawableStart="@drawable/ic_time_16dp"
+        android:drawablePadding="4dp"
+        android:text="00:15:39"
+        android:textColor="#a0a0a0"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/job_item_password"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:drawableStart="@drawable/ic_password_16dp"
+        android:drawablePadding="4dp"
+        android:text="@android:string/unknownName"
+        android:textColor="#DD8888"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/job_item_pmkid"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:drawableEnd="@drawable/ic_lock_16dp"
+        android:drawableStart="@drawable/ic_lock_16dp"
         android:drawablePadding="4dp"
         android:text="1f02aa3d48e4fef4c2b5f1a1aad06176"
-        android:textAlignment="textEnd"
         android:textColor="#a0a0a0"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/job_item_mac_client"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:drawableEnd="@drawable/ic_phone_android_16dp"
+        android:drawableStart="@drawable/ic_phone_android_16dp"
         android:drawablePadding="4dp"
         android:text="a0:b1:c2:d3:e4:f5:67"
-        android:textAlignment="textEnd"
         android:textColor="#a0a0a0"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/job_item_mac_ap"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:drawableEnd="@drawable/ic_router_16dp"
+        android:drawableStart="@drawable/ic_router_16dp"
         android:drawablePadding="4dp"
         android:text="01:02:03:04:05:06"
-        android:textAlignment="textEnd"
         android:textColor="#a0a0a0"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:visibility="gone" />
 
 </LinearLayout>
