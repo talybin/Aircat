@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
@@ -44,8 +45,8 @@ public class HashCatRunner {
             InputStreamReader iss = null;
             Scanner scanner = null;
 
-            String filesDir = Paths.get(Utils.hashCatPath).getParent().toString();
-            publishProgress(Utils.hashCatPath, filesDir);
+            Path workingDir = Paths.get(Utils.hashCatPath).getParent();
+            publishProgress(Utils.hashCatPath, workingDir.toString(), "cwd: " + Paths.get(".").toAbsolutePath().normalize().toString());
 
             try {
                 // Create hash file
@@ -60,22 +61,38 @@ public class HashCatRunner {
 
                 //publishProgress(hashFile.getAbsolutePath(), job.wordlistPath, "[" + hash + "]");
 
-                String args = " -m 16800 a 0 --status --status-timer=10 " +
-                        hashFile.getAbsolutePath() + " " + job.wordlistPath;
+                //String args = " -m 16800 -a 0 --status --status-timer=10 --machine-readable " +
+                //        hashFile.getAbsolutePath() + " " + job.wordlistPath;
 
-                /*
-                ProcessBuilder processBuilder = new ProcessBuilder(Utils.hashCatPath);
+                ProcessBuilder processBuilder = new ProcessBuilder(
+                        //Utils.hashCatPath,
+                        "./hashcat",
+                        "-m", "16800",
+                        "-a", "0",
+                        "--status", "--status-timer=10",
+                        "--machine-readable",
+                        hashFile.getAbsolutePath(),
+                        job.wordlistPath
+                );
+
                 Map<String, String> env = processBuilder.environment();
-                env.put("LD_LIBARY_PATH", Paths.get(Utils.hashCatPath).getParent().toString());
-                processBuilder.command()
+                env.put("LD_LIBRARY_PATH", workingDir.toString());
+
+                processBuilder.directory(workingDir.toFile());
 
                 hashCatProcess = processBuilder.start();
-                 */
 
-                hashCatProcess = Runtime.getRuntime().exec(Utils.hashCatPath + args,
+/*
+                hashCatProcess = Runtime.getRuntime().exec(
+                        Utils.hashCatPath + args,
                         new String[] {
-                                "LD_LIBRARY_PATH=" + filesDir,
-                        });
+                                "LD_LIBRARY_PATH=" + workingDir.toString(),
+                        },
+                        workingDir.toFile()
+                );
+ */
+
+                publishProgress(hashCatProcess.toString(), processBuilder.directory().toString(), processBuilder.command().toString());
 
                 //hashCatProcess = Runtime.getRuntime().exec(Utils.hashCatPath + args);
                 //iss = new InputStreamReader(hashCatProcess.getInputStream());
