@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
                 context, R.raw.builtin_passwords, "built-in_passwords.txt", false);
 
         Utils.installRaw(context, R.raw.libiconv, "libiconv.so", false);
+        Utils.installRaw(context, R.raw.opencl_m16800_pure_cl, "OpenCL/m16800-pure.cl", false);
 
         if (Utils.tcpDumpPath == null ||
                 Utils.hashCatPath == null ||

@@ -73,7 +73,9 @@ public class HashCatRunner {
                  */
 
                 hashCatProcess = Runtime.getRuntime().exec(Utils.hashCatPath + args,
-                        new String[] { "LD_LIBARY_PATH=" + filesDir });
+                        new String[] {
+                                "LD_LIBRARY_PATH=" + filesDir,
+                        });
 
                 //hashCatProcess = Runtime.getRuntime().exec(Utils.hashCatPath + args);
                 //iss = new InputStreamReader(hashCatProcess.getInputStream());

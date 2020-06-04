@@ -36,6 +36,8 @@ public class Utils {
 
             // Check if already installed
             if (!out.exists()) {
+                // Make sure dirs exists
+                new File(Objects.requireNonNull(out.getParent())).mkdirs();
                 // Do install
                 oss = new FileOutputStream(out);
                 iss = context.getResources().openRawResource(sourceId);
