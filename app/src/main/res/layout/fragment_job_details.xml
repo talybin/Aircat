@@ -10,111 +10,123 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:divider="@android:drawable/divider_horizontal_textfield"
-        android:dividerPadding="16dp"
+        android:dividerPadding="6dp"
         android:orientation="vertical"
+        android:paddingHorizontal="10dp"
         android:showDividers="middle">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="10dp">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="match_parent"
-                app:srcCompat="@drawable/ic_router_16dp" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingVertical="5dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:paddingVertical="5dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Access point MAC address"
-                    android:textAllCaps="true"
-                    android:textColor="#a0a0a0"
-                    android:textSize="10sp" />
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="match_parent"
+                    app:srcCompat="@drawable/ic_router_16dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="c4:72:95:64:51:26"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="10dp">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="match_parent"
-                app:srcCompat="@drawable/ic_phone_android_16dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:orientation="vertical">
-
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Client MAC address"
-                    android:textAllCaps="true"
-                    android:textColor="#a0a0a0"
-                    android:textSize="10sp" />
+                    android:layout_marginStart="6dp"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="6c:c7:ec:95:3d:63"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Access point MAC address"
+                        android:textAllCaps="true"
+                        android:textColor="#a0a0a0"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/job_details_mac_ap"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="c4:72:95:64:51:26"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
             </LinearLayout>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="10dp">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="match_parent"
-                app:srcCompat="@drawable/ic_lock_16dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:paddingVertical="5dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="PMKID"
-                    android:textAllCaps="true"
-                    android:textColor="#a0a0a0"
-                    android:textSize="10sp" />
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="match_parent"
+                    app:srcCompat="@drawable/ic_phone_android_16dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="5265b2887ac349c4096eb7c2e4aaba61"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:layout_marginStart="6dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Client MAC address"
+                        android:textAllCaps="true"
+                        android:textColor="#a0a0a0"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/job_details_mac_client"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="6c:c7:ec:95:3d:63"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="5dp">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="match_parent"
+                    app:srcCompat="@drawable/ic_lock_16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PMKID"
+                        android:textAllCaps="true"
+                        android:textColor="#a0a0a0"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/job_details_pmkid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="5265b2887ac349c4096eb7c2e4aaba61"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
             </LinearLayout>
 
         </LinearLayout>
@@ -123,7 +135,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="10dp">
+            android:paddingVertical="10dp">
 
             <ImageView
                 android:layout_width="40dp"
@@ -145,6 +157,7 @@
                     android:textSize="10sp" />
 
                 <TextView
+                    android:id="@+id/job_details_wordlist"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="rockyou.txt"
@@ -153,6 +166,12 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <Button
+            android:id="@+id/job_details_but_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Start" />
 
     </LinearLayout>
 </ScrollView>

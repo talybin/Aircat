@@ -45,8 +45,18 @@ public class MainActivity extends AppCompatActivity {
             // After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         }
 
-        // Install binaries
-        if (!Utils.installBinary(context, R.raw.tcpdump, "tcpdump")) {
+        // Install raw resources
+        Utils.tcpDumpPath = Utils.installRaw(context, R.raw.tcpdump, "tcpdump", true);
+        Utils.hashCatPath = Utils.installRaw(context, R.raw.hashcat, "hashcat", true);
+        Utils.builtinPasswordsPath = Utils.installRaw(
+                context, R.raw.builtin_passwords, "built-in_passwords.txt", false);
+
+        Utils.installRaw(context, R.raw.libiconv, "libiconv.so", false);
+
+        if (Utils.tcpDumpPath == null ||
+                Utils.hashCatPath == null ||
+                Utils.builtinPasswordsPath == null)
+        {
             new AlertDialog.Builder(context)
                     .setTitle(R.string.extraction_error)
                     .setMessage(R.string.extraction_error_msg)

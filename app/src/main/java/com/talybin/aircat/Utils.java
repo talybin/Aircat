@@ -15,32 +15,49 @@ public class Utils {
 
     private static final String LOG_TAG = "Utils";
 
+    // Pathes to raw files
+    public static String tcpDumpPath = null;
+    public static String hashCatPath = null;
+    public static String builtinPasswordsPath = null;
+
     // Cached wireless interface name
     private static String wirelessInterface = null;
 
-    // Install binary from raw resource typically under files/ directory
-    public static boolean installBinary(Context context, int sourceId, String dest) {
+    // Install file from raw resource typically under files/ directory.
+    // Return path to destination file or null on error.
+    public static String installRaw(Context context, int sourceId, String dest, boolean executable) {
         FileOutputStream oss = null;
         InputStream iss = null;
-        boolean ret = false;
+        String destPath = null;
 
         try {
-            File out = new File(context.getFilesDir().getCanonicalPath() + File.separator + dest);
-            oss = new FileOutputStream(out);
-            iss = context.getResources().openRawResource(sourceId);
+            destPath = context.getFilesDir().getCanonicalPath() + File.separator + dest;
+            File out = new File(destPath);
 
-            byte[] buffer = new byte[8 * 1024];
-            int bytesRead;
-            while ((bytesRead = iss.read(buffer)) != -1) {
-                oss.write(buffer, 0, bytesRead);
+            // Check if already installed
+            if (!out.exists()) {
+                // Do install
+                oss = new FileOutputStream(out);
+                iss = context.getResources().openRawResource(sourceId);
+
+                byte[] buffer = new byte[8 * 1024];
+                int bytesRead;
+                while ((bytesRead = iss.read(buffer)) != -1) {
+                    oss.write(buffer, 0, bytesRead);
+                }
             }
 
-            ret = out.setExecutable(true);
-            if (!ret)
-                Log.e(LOG_TAG, "Failed to set executable");
+            // Set executable if needed
+            if (executable && !out.canExecute()) {
+                if (!out.setExecutable(executable)) {
+                    Log.e(LOG_TAG, "Failed to set executable");
+                    destPath = null;
+                }
+            }
         }
         catch (Exception ex) {
             Log.e(LOG_TAG, "Failed to install: " + ex.toString());
+            destPath = null;
         }
         finally {
             if (iss != null)
@@ -48,7 +65,7 @@ public class Utils {
             if (oss != null)
                 try { oss.close(); } catch (IOException ignored) {}
         }
-        return ret;
+        return destPath;
     }
 
     // Try to find wireless interface.
@@ -77,5 +94,18 @@ public class Utils {
         }
 
         return wirelessInterface;
+    }
+
+    // Convert string to series of ascii bytes in hex format
+    public static String toHexSequence(String src) {
+        StringBuilder buffer = new StringBuilder();
+        char[] digits = new char[2];
+
+        for (byte value : src.getBytes()) {
+            digits[0] = Character.forDigit((value >> 4) & 0xf, 16);
+            digits[1] = Character.forDigit(value & 0xf, 16);
+            buffer.append(digits);
+        }
+        return buffer.toString();
     }
 }

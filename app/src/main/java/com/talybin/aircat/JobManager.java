@@ -55,4 +55,27 @@ public class JobManager {
     public void add(ApInfo apInfo) {
         add(new Job(apInfo));
     }
+
+    // Get job by its hash.
+    // Return null if not found.
+    public Job get(String hash) {
+        // O(n) complexity since View list has random access to this job list
+        for (Job job : jobs) {
+            if (job.getHash().equals(hash))
+                return job;
+        }
+        return null;
+    }
+
+    public boolean start(Job job) {
+        if (job.state != Job.State.NOT_RUNNING)
+            return false;
+
+        // TODO invoke hashcat before setting state
+        new HashCatRunner(job);
+
+        job.state = Job.State.RUNNING;
+        // TODO Notify listeners?
+        return true;
+    }
 }

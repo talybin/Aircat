@@ -8,17 +8,21 @@ import java.io.InputStreamReader;
 
 public class GetEapolTask extends AsyncTask<Void, String, Eapol> {
 
-    public interface CompleteListener {
+    public interface Listener {
+        // When process is started onStart() is invoked.
+        // Note, invokes from AsyncTask thread, not from UI thread
+        void onStart();
+
+        // Invokes when Eapol information available
         void onComplete(GetEapolTask task, Eapol info);
     }
 
     private static final String LOG_TAG = "FetchPmkIdTask";
-    private static final String tcpdumpPath = "/data/data/com.talybin.aircat/files/tcpdump";
 
-    private CompleteListener listener;
+    private Listener listener;
     private Process process = null;
 
-    public GetEapolTask(CompleteListener listener) {
+    public GetEapolTask(Listener listener) {
         super();
         this.listener = listener;
     }
@@ -36,8 +40,11 @@ public class GetEapolTask extends AsyncTask<Void, String, Eapol> {
 
         try {
             process = Runtime.getRuntime().exec(
-                    "su -c " + tcpdumpPath + " " + generateEapolParams());
+                    "su -c " + Utils.tcpDumpPath + " " + generateEapolParams());
             iss = new InputStreamReader(process.getInputStream());
+
+            listener.onStart();
+
             info = Eapol.fromStream(iss);
         }
         catch (Exception e) {

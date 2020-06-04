@@ -74,7 +74,12 @@ public class FetchPmkId {
 
         // Create PMKID fetcher
 
-        this.task = new GetEapolTask(new GetEapolTask.CompleteListener() {
+        this.task = new GetEapolTask(new GetEapolTask.Listener() {
+            @Override
+            public void onStart() {
+                networkId = apInfo.connect(wifiManager);
+            }
+
             @Override
             public void onComplete(GetEapolTask task, Eapol info) {
                 cleanup();
@@ -96,7 +101,6 @@ public class FetchPmkId {
         waitDialog.show();
         giveUpHandler.postDelayed(giveUpTask, 10000);
         task.execute();
-        networkId = apInfo.connect(wifiManager);
     }
 
     private void cleanup() {

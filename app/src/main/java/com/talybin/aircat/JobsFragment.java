@@ -56,7 +56,9 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         adapter = new JobListAdapter(new JobListAdapter.ClickListener() {
             @Override
             public void onClick(Job job) {
-                navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment);
+                Bundle args = new Bundle();
+                args.putString("job_hash", job.getHash());
+                navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment, args);
             }
         });
         jobList.setAdapter(adapter);
