@@ -55,7 +55,7 @@ public class JobDetailsFragment extends Fragment {
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.apMac);
         ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.clientMac);
         ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.pmkId);
-        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordlistFile());
+        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordListName());
 
         // Start button
         Button startButton = (Button)view.findViewById(R.id.job_details_but_start);

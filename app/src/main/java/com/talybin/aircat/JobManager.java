@@ -72,7 +72,7 @@ public class JobManager {
             return false;
 
         // TODO invoke hashcat before setting state
-        new HashCatRunner(job);
+        new HashCat(job);
 
         job.state = Job.State.RUNNING;
         // TODO Notify listeners?

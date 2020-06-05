@@ -2,7 +2,6 @@ package com.talybin.aircat;
 
 import android.content.Context;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Job {
@@ -16,7 +15,7 @@ public class Job {
     public String clientMac = null;
     public String ssid = null;
     public String pmkId = null;
-    public String wordlistPath = Utils.builtinPasswordsPath;
+    private String wordListPath = null;
     public State state = State.NOT_RUNNING;
 
     public Job(ApInfo apInfo) {
@@ -34,9 +33,12 @@ public class Job {
         return pmkId;
     }
 
-    public String getWordlistFile() {
-        Path path = Paths.get(wordlistPath);
-        return path.getFileName().toString();
+    public String getWordListPath() {
+        return wordListPath != null ? wordListPath : WordLists.getBuiltInPath();
+    }
+
+    public String getWordListName() {
+        return Paths.get(getWordListPath()).getFileName().toString();
     }
 
     public String getState() {

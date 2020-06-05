@@ -19,7 +19,7 @@ public class FetchPmkId {
     private ApInfo apInfo;
     private Listener listener;
 
-    private GetEapolTask task;
+    private TcpDump task;
     private ProgressDialog waitDialog;
 
     // Give up timer
@@ -74,14 +74,14 @@ public class FetchPmkId {
 
         // Create PMKID fetcher
 
-        this.task = new GetEapolTask(new GetEapolTask.Listener() {
+        this.task = new TcpDump(new TcpDump.Listener() {
             @Override
             public void onStart() {
                 networkId = apInfo.connect(wifiManager);
             }
 
             @Override
-            public void onComplete(GetEapolTask task, Eapol info) {
+            public void onComplete(TcpDump task, Eapol info) {
                 cleanup();
 
                 if (info == null) {

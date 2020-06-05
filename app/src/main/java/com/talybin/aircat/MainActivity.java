@@ -1,7 +1,6 @@
 package com.talybin.aircat;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,9 +16,12 @@ import androidx.navigation.ui.NavigationUI;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.io.File;
+import java.lang.ref.WeakReference;
+
 public class MainActivity extends AppCompatActivity {
 
-    private static Context context;
+    private static WeakReference<MainActivity> weakContext;
     private NavController navController;
 
     @Override
@@ -27,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        context = this;
+        weakContext = new WeakReference<>(this);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -45,25 +47,7 @@ public class MainActivity extends AppCompatActivity {
             // After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         }
 
-        // Install raw resources
-        Utils.tcpDumpPath = Utils.installRaw(context, R.raw.tcpdump, "tcpdump", true);
-        Utils.hashCatPath = Utils.installRaw(context, R.raw.hashcat, "hashcat", true);
-        Utils.builtinPasswordsPath = Utils.installRaw(
-                context, R.raw.builtin_passwords, "built-in_passwords.txt", false);
-
-        Utils.installRaw(context, R.raw.libiconv, "libiconv.so", false);
-        Utils.installRaw(context, R.raw.opencl_m16800_pure_cl, "OpenCL/m16800-pure.cl", false);
-
-        if (Utils.tcpDumpPath == null ||
-                Utils.hashCatPath == null ||
-                Utils.builtinPasswordsPath == null)
-        {
-            new AlertDialog.Builder(context)
-                    .setTitle(R.string.extraction_error)
-                    .setMessage(R.string.extraction_error_msg)
-                    .setNegativeButton(android.R.string.ok, null)
-                    .show();
-        }
+        installDependencies();
     }
 
     @Override
@@ -88,13 +72,52 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static Context getContext() {
-        return context;
+    // May return null if context is closed
+    public static MainActivity getContext() {
+        return weakContext.get();
     }
 
     // Setting up the navigation back button
     @Override
     public boolean onSupportNavigateUp() {
         return NavigationUI.navigateUp(navController, (DrawerLayout) null);
+    }
+
+    private void installDependencies() {
+        File filesDir = getFilesDir();
+        String filesPath = filesDir.toString();
+
+        // Setup constants
+        HashCat.setExePath(filesPath + "/hashcat/hashcat");
+        TcpDump.setExePath(filesPath + "/tcpdump/tcpdump");
+        WordLists.setBuiltInPath(filesPath + "/wordlists/built-in.txt");
+
+        // Check if already installed
+        String[] installed = filesDir.list();
+        if (installed != null && installed.length > 0)
+            return;
+
+        // Install in background, should not take a long time
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                if (Utils.unpackRawZip(getContext(), R.raw.assets)) {
+                    // Apply permissions
+                    new File(HashCat.getExePath()).setExecutable(true);
+                    new File(TcpDump.getExePath()).setExecutable(true);
+                }
+                else runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        new AlertDialog.Builder(getContext())
+                                .setTitle(R.string.extraction_error)
+                                .setMessage(R.string.extraction_error_msg)
+                                .setNegativeButton(android.R.string.ok, null)
+                                .show();
+                    }
+                });
+            }
+        };
+        thread.start();
     }
 }

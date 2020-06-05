@@ -1,8 +1,8 @@
 package com.talybin.aircat;
 
 import android.content.Context;
-import android.util.Log;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,64 +10,63 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class Utils {
 
     private static final String LOG_TAG = "Utils";
 
-    // Pathes to raw files
-    public static String tcpDumpPath = null;
-    public static String hashCatPath = null;
-    public static String builtinPasswordsPath = null;
-
     // Cached wireless interface name
     private static String wirelessInterface = null;
 
-    // Install file from raw resource typically under files/ directory.
-    // Return path to destination file or null on error.
-    public static String installRaw(Context context, int sourceId, String dest, boolean executable) {
-        FileOutputStream oss = null;
+    // Extract files from zipped raw resource file to specified directory
+    public static boolean unpackRawZip(Context context, int resourceId, String destDir) {
+        ZipEntry zipEntry;
+        byte[] buffer = new byte[8 * 1024];
+
         InputStream iss = null;
-        String destPath = null;
+        ZipInputStream zis = null;
 
         try {
-            destPath = context.getFilesDir().getCanonicalPath() + File.separator + dest;
-            File out = new File(destPath);
+            iss = context.getResources().openRawResource(resourceId);
+            zis = new ZipInputStream(new BufferedInputStream(iss));
 
-            // Check if already installed
-            if (!out.exists()) {
-                // Make sure dirs exists
-                new File(Objects.requireNonNull(out.getParent())).mkdirs();
-                // Do install
-                oss = new FileOutputStream(out);
-                iss = context.getResources().openRawResource(sourceId);
+            while ((zipEntry = zis.getNextEntry()) != null) {
+                String filename = destDir + File.separator + zipEntry.getName();
 
-                byte[] buffer = new byte[8 * 1024];
-                int bytesRead;
-                while ((bytesRead = iss.read(buffer)) != -1) {
-                    oss.write(buffer, 0, bytesRead);
-                }
-            }
+                if (zipEntry.isDirectory())
+                    new File(filename).mkdirs();
+                else {
+                    FileOutputStream fout = new FileOutputStream(filename);
+                    int bytesRead;
 
-            // Set executable if needed
-            if (executable && !out.canExecute()) {
-                if (!out.setExecutable(executable)) {
-                    Log.e(LOG_TAG, "Failed to set executable");
-                    destPath = null;
+                    while ((bytesRead = zis.read(buffer)) != -1) {
+                        fout.write(buffer, 0, bytesRead);
+                    }
+
+                    fout.close();
+                    zis.closeEntry();
                 }
             }
         }
-        catch (Exception ex) {
-            Log.e(LOG_TAG, "Failed to install: " + ex.toString());
-            destPath = null;
+        catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         finally {
             if (iss != null)
                 try { iss.close(); } catch (IOException ignored) {}
-            if (oss != null)
-                try { oss.close(); } catch (IOException ignored) {}
+            if (zis != null)
+                try { zis.close(); } catch (IOException ignored) {}
         }
-        return destPath;
+
+        return true;
+    }
+
+    // Extract files from zipped raw resource file to files directory
+    public static boolean unpackRawZip(Context context, int resourceId) {
+        return unpackRawZip(context, resourceId, context.getFilesDir().toString());
     }
 
     // Try to find wireless interface.
