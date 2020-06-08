@@ -16,7 +16,11 @@
     <string name="pmkid_not_supported">%1$s do not support PMKID</string>
     <string name="no_answer">No answer from %1$s</string>
     <string name="complete_percent">Complete: %1$d%%</string>
+    <string name="start">Start</string>
+    <string name="remove">Remove</string>
     <string name="not_running">Not running</string>
+    <string name="starting">Starting</string>
     <string name="running">Running</string>
+    <string name="stopping">Stopping</string>
     <string name="failed_to_start_job">Failed to start the job</string>
 </resources>

@@ -101,10 +101,13 @@ public class MainActivity extends AppCompatActivity {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                if (Utils.unpackRawZip(getContext(), R.raw.assets)) {
+                if (Utils.unpackRawZip(getContext(), R.raw.assets, new String[] {
+                        "hashcat/hashcat",
+                        "tcpdump/tcpdump",
+                })) {
                     // Apply permissions
-                    new File(HashCat.getExePath()).setExecutable(true);
-                    new File(TcpDump.getExePath()).setExecutable(true);
+                    //new File(HashCat.getExePath()).setExecutable(true);
+                    //new File(TcpDump.getExePath()).setExecutable(true);
                 }
                 else runOnUiThread(new Runnable() {
                     @Override

@@ -5,6 +5,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -20,6 +23,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.List;
+
 public class JobsFragment extends Fragment implements JobManager.Listener {
 
     private RecyclerView jobList;
@@ -28,6 +33,12 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
     private NavController navController;
 
     private JobManager jobManager;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
 
     @Override
     public View onCreateView(
@@ -91,7 +102,43 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
     }
 
     @Override
-    public void onNewJob(Job job) {
+    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.job_menu, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_start:
+                startSelectedJobs();
+                return true;
+            case R.id.action_remove:
+                removeSelectedJobs();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onNewJob(final Job job) {
         adapter.notifyDataSetChanged();
+    }
+
+    private void startSelectedJobs() {
+        // Just a test right now
+        List<Job> jobs = jobManager.getJobs();
+        if (jobs.isEmpty())
+            return;
+
+        jobManager.start(jobs.get(0));
+    }
+
+    private void removeSelectedJobs() {
+        // Just a test right now
+        List<Job> jobs = jobManager.getJobs();
+        if (!jobs.isEmpty()) {
+            jobManager.remove(jobs.size() - 1);
+            adapter.notifyDataSetChanged();
+        }
     }
 }

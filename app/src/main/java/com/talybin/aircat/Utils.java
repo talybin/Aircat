@@ -21,7 +21,9 @@ public class Utils {
     private static String wirelessInterface = null;
 
     // Extract files from zipped raw resource file to specified directory
-    public static boolean unpackRawZip(Context context, int resourceId, String destDir) {
+    public static boolean unpackRawZip(
+            Context context, int resourceId, String destDir, String[] executables)
+    {
         ZipEntry zipEntry;
         byte[] buffer = new byte[8 * 1024];
 
@@ -49,6 +51,12 @@ public class Utils {
                     zis.closeEntry();
                 }
             }
+
+            // Set executable permission
+            for (String exe : executables) {
+                File fname = new File(destDir + File.separator + exe);
+                fname.setExecutable(true);
+            }
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -65,8 +73,8 @@ public class Utils {
     }
 
     // Extract files from zipped raw resource file to files directory
-    public static boolean unpackRawZip(Context context, int resourceId) {
-        return unpackRawZip(context, resourceId, context.getFilesDir().toString());
+    public static boolean unpackRawZip(Context context, int resourceId, String[] executables) {
+        return unpackRawZip(context, resourceId, context.getFilesDir().toString(), executables);
     }
 
     // Try to find wireless interface.

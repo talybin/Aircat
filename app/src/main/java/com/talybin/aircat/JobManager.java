@@ -56,6 +56,10 @@ public class JobManager {
         add(new Job(apInfo));
     }
 
+    public void remove(int pos) {
+        jobs.remove(pos);
+    }
+
     // Get job by its hash.
     // Return null if not found.
     public Job get(String hash) {
@@ -68,13 +72,14 @@ public class JobManager {
     }
 
     public boolean start(Job job) {
-        if (job.state != Job.State.NOT_RUNNING)
+        if (job.getState() != Job.State.NOT_RUNNING)
             return false;
 
         // TODO invoke hashcat before setting state
-        new HashCat(job);
+        //new HashCat(job);
+        new HashCatHandler(job).start();
 
-        job.state = Job.State.RUNNING;
+        //job.state = Job.State.RUNNING;
         // TODO Notify listeners?
         return true;
     }

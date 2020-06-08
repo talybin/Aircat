@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +28,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     static class JobViewHolder
-            extends RecyclerView.ViewHolder
+            extends RecyclerView.ViewHolder implements Job.Listener, View.OnAttachStateChangeListener
     {
         private TextView ssid;
         private TextView pmkId;
@@ -51,10 +52,15 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             progressBar = (ProgressBar)itemView.findViewById(R.id.job_item_progress_bar);
 
             job = null;
+            itemView.addOnAttachStateChangeListener(this);
         }
 
         void bindData(Job job) {
-            Context context = this.itemView.getContext();
+            if (this.job != null)
+                this.job.removeListener(this);
+            job.addListener(this);
+
+            Context context = itemView.getContext();
             this.job = job;
 
             ssid.setText(job.ssid);
@@ -67,6 +73,22 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         public Job getJob() {
             return job;
+        }
+
+        @Override
+        public void onStateChange() {
+            status.setText(job.getStateAsStr(itemView.getContext()));
+        }
+
+        @Override
+        public void onViewAttachedToWindow(View v) {
+        }
+
+        @Override
+        public void onViewDetachedFromWindow(View v) {
+            if (job != null)
+                job.removeListener(this);
+            v.removeOnAttachStateChangeListener(this);
         }
     }
 
