@@ -10,7 +10,9 @@ public class ListenerBase<T> {
     protected ListenerBase() {
     }
 
-    protected void finalize() {
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
         listeners.clear();
     }
 

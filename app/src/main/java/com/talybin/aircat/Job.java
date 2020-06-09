@@ -5,7 +5,7 @@ import android.util.Log;
 
 import java.nio.file.Paths;
 
-public class Job extends ListenerBase<Job.Listener> {
+public class Job /*extends ListenerBase<Job.Listener>*/ {
 
     public enum State {
         NOT_RUNNING,
@@ -14,15 +14,17 @@ public class Job extends ListenerBase<Job.Listener> {
         STOPPING,
     }
 
+    /*
     public interface Listener {
         void onStateChange();
         //void onProgress();
-    }
+    }*/
 
     public String apMac = null;
     public String clientMac = null;
     public String ssid = null;
     public String pmkId = null;
+    public HashCat.Status status = null;
 
     private State state = State.NOT_RUNNING;
     private String wordListPath = null;
@@ -78,8 +80,8 @@ public class Job extends ListenerBase<Job.Listener> {
         Log.d("Job", "Setting new state: " + newState);
         if (state != newState) {
             state = newState;
-            for (Listener listener : listeners)
-                listener.onStateChange();
+            //for (Listener listener : listeners)
+            //    listener.onStateChange();
         }
     }
 }

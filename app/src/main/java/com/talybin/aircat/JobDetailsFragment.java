@@ -80,5 +80,4 @@ public class JobDetailsFragment extends Fragment {
         if (!jobManager.start(job))
             Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
     }
-
 }

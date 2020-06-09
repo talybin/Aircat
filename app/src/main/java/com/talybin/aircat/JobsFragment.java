@@ -11,6 +11,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -120,8 +121,36 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
     }
 
     @Override
-    public void onNewJob(final Job job) {
+    public void onNewJob(Job job) {
+        // TODO add listeners here
         adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onStart(final HashCatHandler handler, final Job job) {
+        handler.addListener(new HashCatHandler.Listener() {
+            @Override
+            public void onJobState(Job.State state) {
+                if (state == Job.State.NOT_RUNNING) {
+                    handler.removeListener(this);
+                    job.status = null;
+                }
+                job.setState(state);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onStatus(HashCat.Status status) {
+                Log.d("JobsFragment", "---> new status: " + status);
+                job.status = status;
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(Exception ex) {
+                Toast.makeText(getContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void startSelectedJobs() {
@@ -130,7 +159,10 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         if (jobs.isEmpty())
             return;
 
-        jobManager.start(jobs.get(0));
+        if (!jobManager.start(jobs.get(0))) {
+            Toast.makeText(getContext(),
+                    R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void removeSelectedJobs() {

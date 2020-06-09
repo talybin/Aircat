@@ -4,19 +4,24 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-public class HashCatHandler {
+public class HashCatHandler extends ListenerBase<HashCatHandler.Listener> {
 
     private Handler handler;
     private HashCat hashCat;
-    private Job job;
+
+    public interface Listener {
+        void onJobState(Job.State state);
+        void onStatus(HashCat.Status status);
+        void onError(Exception ex);
+    }
 
     public HashCatHandler(Job job) {
         super();
 
-        this.job = job;
         handler = new Handler(new Handler.Callback() {
             @Override
             public boolean handleMessage(@NonNull Message msg) {
@@ -44,19 +49,20 @@ public class HashCatHandler {
         Log.d("HashCatHandler", "---> Got message: " + msg.what);
         switch (msg.what) {
             case HashCat.MSG_SET_STATE:
-                job.setState((Job.State)msg.obj);
+                for (Listener l : listeners)
+                    l.onJobState((Job.State)msg.obj);
                 break;
+
+            case HashCat.MSG_STATUS:
+                for (Listener l : listeners)
+                    l.onStatus((HashCat.Status)msg.obj);
+                break;
+
             case HashCat.MSG_ERROR:
-                Log.e("HashCatHandler", ((Exception)msg.obj).getMessage());
+                for (Listener l : listeners)
+                    l.onError((Exception)msg.obj);
                 break;
         }
         return true;
     }
-
-    /*
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        if (thread.isAlive())
-    }*/
 }

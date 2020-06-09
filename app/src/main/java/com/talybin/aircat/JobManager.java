@@ -11,6 +11,7 @@ public class JobManager {
 
     public interface Listener {
         void onNewJob(Job job);
+        void onStart(HashCatHandler handler, Job job);
     }
 
     private static JobManager instance = new JobManager();
@@ -75,12 +76,13 @@ public class JobManager {
         if (job.getState() != Job.State.NOT_RUNNING)
             return false;
 
-        // TODO invoke hashcat before setting state
-        //new HashCat(job);
-        new HashCatHandler(job).start();
+        job.status = null;
 
-        //job.state = Job.State.RUNNING;
-        // TODO Notify listeners?
+        HashCatHandler handler = new HashCatHandler(job);
+        for (Listener listener : listeners)
+            listener.onStart(handler, job);
+
+        handler.start();
         return true;
     }
 }

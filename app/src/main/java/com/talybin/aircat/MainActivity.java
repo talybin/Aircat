@@ -90,7 +90,8 @@ public class MainActivity extends AppCompatActivity {
         // Setup constants
         HashCat.setExePath(filesPath + "/hashcat/hashcat");
         TcpDump.setExePath(filesPath + "/tcpdump/tcpdump");
-        WordLists.setBuiltInPath(filesPath + "/wordlists/built-in.txt");
+        //WordLists.setBuiltInPath(filesPath + "/wordlists/built-in.txt");
+        WordLists.setBuiltInPath(filesPath + "/wordlists/english.txt");
 
         // Check if already installed
         String[] installed = filesDir.list();
@@ -101,24 +102,21 @@ public class MainActivity extends AppCompatActivity {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                if (Utils.unpackRawZip(getContext(), R.raw.assets, new String[] {
+                if (!Utils.unpackRawZip(getContext(), R.raw.assets, new String[] {
                         "hashcat/hashcat",
                         "tcpdump/tcpdump",
                 })) {
-                    // Apply permissions
-                    //new File(HashCat.getExePath()).setExecutable(true);
-                    //new File(TcpDump.getExePath()).setExecutable(true);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            new AlertDialog.Builder(getContext())
+                                    .setTitle(R.string.extraction_error)
+                                    .setMessage(R.string.extraction_error_msg)
+                                    .setNegativeButton(android.R.string.ok, null)
+                                    .show();
+                        }
+                    });
                 }
-                else runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        new AlertDialog.Builder(getContext())
-                                .setTitle(R.string.extraction_error)
-                                .setMessage(R.string.extraction_error_msg)
-                                .setNegativeButton(android.R.string.ok, null)
-                                .show();
-                    }
-                });
             }
         };
         thread.start();

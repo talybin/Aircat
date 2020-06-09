@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.content.Context;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,15 +28,13 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    static class JobViewHolder
-            extends RecyclerView.ViewHolder implements Job.Listener, View.OnAttachStateChangeListener
+    static class JobViewHolder extends RecyclerView.ViewHolder
     {
         private TextView ssid;
-        private TextView pmkId;
         private TextView status;
         private TextView complete;
-        private TextView macAp;
-        private TextView macClient;
+        private TextView speed;
+        private TextView estTime;
         private ProgressBar progressBar;
 
         private Job job;
@@ -44,51 +43,44 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(itemView);
 
             ssid = (TextView)itemView.findViewById(R.id.job_item_ssid);
-            pmkId = (TextView)itemView.findViewById(R.id.job_item_pmkid);
             status = (TextView)itemView.findViewById(R.id.job_item_status);
             complete = (TextView)itemView.findViewById(R.id.job_item_complete);
-            macAp = (TextView)itemView.findViewById(R.id.job_item_mac_ap);
-            macClient = (TextView)itemView.findViewById(R.id.job_item_mac_client);
             progressBar = (ProgressBar)itemView.findViewById(R.id.job_item_progress_bar);
+            speed = (TextView)itemView.findViewById(R.id.job_item_speed);
+            estTime = (TextView)itemView.findViewById(R.id.job_item_est_time);
 
             job = null;
-            itemView.addOnAttachStateChangeListener(this);
         }
 
         void bindData(Job job) {
-            if (this.job != null)
-                this.job.removeListener(this);
-            job.addListener(this);
-
             Context context = itemView.getContext();
             this.job = job;
 
             ssid.setText(job.ssid);
-            pmkId.setText(job.pmkId);
-            //status.setText("Status: Not running");
-            complete.setText(context.getString(R.string.complete_percent, 0));
-            macAp.setText(job.apMac);
-            macClient.setText(job.clientMac);
+            status.setText(job.getStateAsStr(context));
+
+            float percentComplete = 0;
+            long estimated = 0;
+
+            if (job.status != null && job.status.total > 0) {
+                percentComplete = job.status.nr_complete * 100.f / job.status.total;
+
+                speed.setText(context.getString(R.string.cracking_speed, job.status.speed));
+                if (job.status.speed > 0)
+                    estimated = (job.status.total - job.status.nr_complete) / job.status.speed;
+            }
+            else {
+                speed.setText(context.getString(R.string.cracking_speed, 0));
+            }
+            complete.setText(context.getString(R.string.complete_percent, percentComplete));
+            progressBar.setProgress(Math.round(percentComplete), true);
+
+            estTime.setText(context.getString(R.string.estimated_time, estimated > 0 ?
+                    DateUtils.formatElapsedTime(estimated) : context.getString(android.R.string.unknownName)));
         }
 
         public Job getJob() {
             return job;
-        }
-
-        @Override
-        public void onStateChange() {
-            status.setText(job.getStateAsStr(itemView.getContext()));
-        }
-
-        @Override
-        public void onViewAttachedToWindow(View v) {
-        }
-
-        @Override
-        public void onViewDetachedFromWindow(View v) {
-            if (job != null)
-                job.removeListener(this);
-            v.removeOnAttachStateChangeListener(this);
         }
     }
 

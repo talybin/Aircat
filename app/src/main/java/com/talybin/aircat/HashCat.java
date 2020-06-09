@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -10,6 +11,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.DoubleBuffer;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
@@ -34,6 +36,32 @@ public class HashCat extends Thread {
     // Handler messages
     public static final int MSG_ERROR = 1;
     public static final int MSG_SET_STATE = 2;
+    public static final int MSG_STATUS = 3;
+
+    public class Status {
+        // State of the job:
+        //  3 (running)
+        //  5 (exhausted)
+        //  6 (cracked)
+        //  7 (aborted)
+        //  8 (quit)
+        int state = 0;
+
+        // Speed in hashes per second
+        int speed = 0;
+
+        // Number of hashes completed so far
+        long nr_complete = 0;
+
+        // Total number of hashes
+        long total = 0;
+
+        // For debug purpose
+        public String toString() {
+            return String.format("state: %d, speed: %d H/s, complete: %d/%d",
+                    state, speed, nr_complete, total);
+        }
+    }
 
     public HashCat(Job job, Handler handler) {
         this.job = job;
@@ -60,7 +88,7 @@ public class HashCat extends Thread {
         if (hashFile == null)
             return;
 
-        updateState(Job.State.STARTING);
+        notifyHandler(MSG_SET_STATE, Job.State.STARTING);
 
         InputStreamReader iss = null;
         Scanner scanner = null;
@@ -71,7 +99,8 @@ public class HashCat extends Thread {
                             "./hashcat",
                             "-m", "16800",
                             "-a", "0",
-                            "--status", "--status-timer=10",
+                            "--quiet",
+                            "--status", "--status-timer=3",
                             "--machine-readable",
                             hashFile.getPath(),
                             job.getWordListPath(),
@@ -85,18 +114,38 @@ public class HashCat extends Thread {
             iss = new InputStreamReader(process.getInputStream());
             scanner = new Scanner(iss);
 
+            Status curStatus = new Status();
+
             while (scanner.hasNext()) {
-                String line = scanner.nextLine();
-                Log.d(LOG_TAG, "---> line [" + line + "]");
+                //String line = scanner.nextLine();
+                //Log.d(LOG_TAG, "---> line [" + line + "]");
+
+                switch (scanner.next()) {
+                    case "STATUS":
+                        curStatus.state = scanner.nextInt();
+                        break;
+                    case "SPEED":
+                        curStatus.speed = scanner.nextInt();
+                        break;
+                    case "PROGRESS":
+                        curStatus.nr_complete = scanner.nextLong();
+                        // Send status
+                        if (curStatus.nr_complete == 0) {
+                            curStatus.total = scanner.nextLong();
+                            notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
+                        }
+                        notifyHandler(MSG_STATUS, curStatus);
+                        break;
+                }
             }
 
-            updateState(Job.State.NOT_RUNNING);
+            notifyHandler(MSG_SET_STATE, Job.State.NOT_RUNNING);
         }
         catch (IOException e) {
             e.printStackTrace();
             abort();
             //listener.onError(e.getMessage());
-            reportError(e);
+            notifyHandler(MSG_ERROR, e);
         }
         finally {
             if (iss != null)
@@ -136,22 +185,27 @@ public class HashCat extends Thread {
             }
 
             //listener.onError(e.getMessage());
-            reportError(e);
+            notifyHandler(MSG_ERROR, e);
         }
     }
 
     public void abort() {
         if (process != null) {
             if (process.isAlive()) {
-                updateState(Job.State.STOPPING);
+                notifyHandler(MSG_SET_STATE, Job.State.STOPPING);
+                // TODO send 'q' instead
                 process.destroy();
                 try { join(); } catch (InterruptedException ignored) {}
             }
             process = null;
-            updateState(Job.State.NOT_RUNNING);
+            notifyHandler(MSG_SET_STATE, Job.State.NOT_RUNNING);
         }
     }
 
+    private void notifyHandler(int what, Object data) {
+        handler.sendMessage(handler.obtainMessage(what, data));
+    }
+/*
     private void reportError(Exception ex) {
         Message msg = handler.obtainMessage(MSG_ERROR, ex);
         handler.sendMessage(msg);
@@ -161,7 +215,7 @@ public class HashCat extends Thread {
     private void updateState(Job.State newState) {
         handler.sendMessage(
                 handler.obtainMessage(MSG_SET_STATE, newState));
-    }
+    }*/
 
 
 
