@@ -20,6 +20,7 @@
     <string name="cracking_speed">Cracking speed: %1$,d H/s</string>
     <string name="estimated_time">Estimated time: %1$s</string>
     <string name="start">Start</string>
+    <string name="pause">Pause</string>
     <string name="remove">Remove</string>
     <string name="not_running">Not running</string>
     <string name="starting">Starting</string>

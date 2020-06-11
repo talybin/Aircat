@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface ClickListener {
-        void onClick(Job job);
+        void onClick(Job job, int position);
     }
 
     private JobManager jobManager;
@@ -134,7 +134,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    clickListener.onClick(holder.getJob());
+                    clickListener.onClick(holder.getJob(), holder.getAdapterPosition());
                 }
             });
             return holder;

@@ -8,6 +8,11 @@
         android:title="@string/start"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_pause"
+        android:icon="@android:drawable/ic_media_pause"
+        android:title="@string/pause"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_remove"
         android:icon="@drawable/ic_delete_24dp"
         android:title="@string/remove"

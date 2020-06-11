@@ -65,6 +65,7 @@ public class JobManager {
         jobs.remove(job);
     }
 
+    /*
     // Get job by its hash.
     // Return null if not found.
     public Job get(String hash) {
@@ -75,6 +76,7 @@ public class JobManager {
         }
         return null;
     }
+     */
 /*
     public boolean start(Job job) {
         if (job.getState() != Job.State.NOT_RUNNING)

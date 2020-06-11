@@ -19,12 +19,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-public class JobDetailsFragment extends Fragment {
+public class JobDetailsFragment extends Fragment implements Job.Listener {
 
     private Context context;
 
-    private JobManager jobManager;
-    private Job job;
+    private JobManager jobManager = null;
+    private Job job = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -48,7 +48,7 @@ public class JobDetailsFragment extends Fragment {
         // Retrieve the job
         Bundle args = getArguments();
         if (args != null)
-            job = jobManager.get(args.getString("job_hash"));
+            job = jobManager.getJobs().get(args.getInt("job_position"));
         if (job == null) {  // Should never happen
             Log.e(this.getClass().getName(), "Missing job argument");
             goBack();
@@ -70,10 +70,13 @@ public class JobDetailsFragment extends Fragment {
         // Start button
         Button startButton = (Button)view.findViewById(R.id.job_details_but_start);
         startButton.setOnClickListener(v -> { startJob(); });
+
+        job.addListener(this);
     }
 
     @Override
     public void onDestroyView() {
+        job.removeListener(this);
         super.onDestroyView();
     }
 
@@ -83,10 +86,23 @@ public class JobDetailsFragment extends Fragment {
     }
 
     @Override
+    public void onPrepareOptionsMenu(@NonNull Menu menu) {
+        if (job != null) {
+            boolean notRunning = job.getState() == Job.State.NOT_RUNNING;
+            menu.findItem(R.id.action_pause).setVisible(!notRunning);
+            menu.findItem(R.id.action_start).setVisible(notRunning);
+        }
+        super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_start:
                 startJob();
+                return true;
+            case R.id.action_pause:
+                pauseJob();
                 return true;
             case R.id.action_remove:
                 removeJob();
@@ -104,8 +120,21 @@ public class JobDetailsFragment extends Fragment {
             Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
     }
 
+    private void pauseJob() {
+    }
+
     private void removeJob() {
         jobManager.remove(job);
         goBack();
+    }
+
+    @Override
+    public void onJobStateChange(Job job) {
+        requireActivity().invalidateOptionsMenu();
+    }
+
+    @Override
+    public void onHashCatProgressChange(Job job, HashCat.Progress progress) {
+
     }
 }
