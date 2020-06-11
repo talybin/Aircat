@@ -31,7 +31,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             implements Job.Listener, View.OnAttachStateChangeListener
     {
         private TextView ssid;
-        private TextView status;
+        private TextView password;
+        private TextView state;
         private TextView complete;
         private TextView speed;
         private TextView estTime;
@@ -43,7 +44,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(itemView);
 
             ssid = (TextView)itemView.findViewById(R.id.job_item_ssid);
-            status = (TextView)itemView.findViewById(R.id.job_item_status);
+            password = (TextView)itemView.findViewById(R.id.job_item_password);
+            state = (TextView)itemView.findViewById(R.id.job_item_status);
             complete = (TextView)itemView.findViewById(R.id.job_item_complete);
             progressBar = (ProgressBar)itemView.findViewById(R.id.job_item_progress_bar);
             speed = (TextView)itemView.findViewById(R.id.job_item_speed);
@@ -62,7 +64,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ssid.setText(job.getSSID());
 
             onJobStateChange(job);
-            onJobProgressChange(job);
+            onHashCatProgressChange(job);
         }
 
         public Job getJob() {
@@ -71,13 +73,13 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         @Override
         public void onJobStateChange(Job job) {
-            status.setText(job.getStateAsStr(itemView.getContext()));
+            state.setText(job.getStateAsStr(itemView.getContext()));
         }
 
         @Override
-        public void onJobProgressChange(Job job) {
-            Job.Progress progress = job.getProgress();
+        public void onHashCatProgressChange(Job job) {
             Context context = itemView.getContext();
+            HashCat.Progress progress = job.getProgress();
 
             float percentComplete = 0;
             long estimated = 0;
@@ -88,6 +90,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 speed.setText(context.getString(R.string.cracking_speed, progress.speed));
                 if (progress.speed > 0)
                     estimated = (progress.total - progress.nr_complete) / progress.speed;
+
+                // Show password if found
+                if (progress.state == 6 && progress.password != null)
+                    password.setText(progress.password);
             }
             else {
                 speed.setText(context.getString(R.string.cracking_speed, 0));

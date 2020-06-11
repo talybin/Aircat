@@ -1,18 +1,23 @@
 package com.talybin.aircat;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 public class HashCat extends Thread implements Handler.Callback {
 
@@ -23,6 +28,7 @@ public class HashCat extends Thread implements Handler.Callback {
 
     private File hashFile = null;
     private File workingDir = null;
+    private Progress progress = new Progress();
 
     // Handler messages
     private static final int MSG_ERROR = 1;
@@ -32,6 +38,42 @@ public class HashCat extends Thread implements Handler.Callback {
     // Return working directory of hashcat
     public static String getWorkingDir(Context context) {
         return context.getFilesDir().getPath() + "/hashcat";
+    }
+
+    // Never null
+    public Progress getProgress() {
+        return progress;
+    }
+
+    // HashCat progress
+    public static class Progress {
+        // State of the job:
+        //  3 (running)
+        //  5 (exhausted)
+        //  6 (cracked)
+        //  7 (aborted)
+        //  8 (quit)
+        public int state = 0;
+
+        // Speed in hashes per second
+        public int speed = 0;
+
+        // Number of hashes completed so far
+        public long nr_complete = 0;
+
+        // Total number of hashes
+        public long total = 0;
+
+        // Password (null if not found)
+        public String password = null;
+
+        // For debug purpose
+        @NonNull
+        @SuppressLint("DefaultLocale")
+        public String toString() {
+            return String.format("state: %d, speed: %d H/s, complete: %d/%d",
+                    state, speed, nr_complete, total);
+        }
     }
 
     public interface Listener {
@@ -58,7 +100,7 @@ public class HashCat extends Thread implements Handler.Callback {
         super();
 
         this.job = job;
-        this.listener = listener;
+        this.listener = listener != null ? listener : new DefaultListener(context);
         this.workingDir = Paths.get(getWorkingDir(context)).toFile();
         this.handler = new Handler(this);
 
@@ -67,7 +109,7 @@ public class HashCat extends Thread implements Handler.Callback {
 
     // Constructor
     public HashCat(Context context, Job job) {
-        this(context, job, new DefaultListener(context));
+        this(context, job, null);
     }
 
     // Destructor
@@ -121,14 +163,14 @@ public class HashCat extends Thread implements Handler.Callback {
 
     // Message queue handler
     public boolean handleMessage(Message msg) {
-        Log.d("HashCatHandler", "---> Got message: " + msg.what);
+        Log.d("HashCat", "---> Got message: " + msg.what);
         switch (msg.what) {
             case HashCat.MSG_SET_STATE:
                 job.setState((Job.State)msg.obj);
                 break;
 
             case HashCat.MSG_SET_PROGRESS:
-                job.setProgress((Job.Progress)msg.obj);
+                job.setProgress((Progress)msg.obj);
                 break;
 
             case HashCat.MSG_ERROR:
@@ -147,8 +189,12 @@ public class HashCat extends Thread implements Handler.Callback {
         notifyHandler(MSG_SET_PROGRESS, null);
         notifyHandler(MSG_SET_STATE, Job.State.STARTING);
 
-        InputStreamReader iss = null;
+        InputStreamReader outStream = null;
+        InputStreamReader errStream = null;
         Scanner scanner = null;
+
+        // Password starts with AP mac address without colons
+        final String apMac = job.getApMac().replace(":", "");
 
         try {
             process = Runtime.getRuntime().exec(
@@ -157,8 +203,11 @@ public class HashCat extends Thread implements Handler.Callback {
                             "-m", "16800",
                             "-a", "0",
                             "--quiet",
-                            "--status", "--status-timer=3",
+                            "--status", "--statu" +
+                            "s-timer=3",
                             "--machine-readable",
+                            "--logfile-disable",
+                            "--potfile-disable",
                             hashFile.getPath(),
                             job.getWordListPath(),
                     },
@@ -168,16 +217,24 @@ public class HashCat extends Thread implements Handler.Callback {
                     workingDir
             );
 
-            iss = new InputStreamReader(process.getInputStream());
-            scanner = new Scanner(iss);
-
-            Job.Progress progress = new Job.Progress();
+            outStream = new InputStreamReader(process.getInputStream());
+            errStream = new InputStreamReader(process.getErrorStream());
+            scanner = new Scanner(outStream);
 
             while (scanner.hasNext()) {
                 //String line = scanner.nextLine();
-                //Log.d(LOG_TAG, "---> line [" + line + "]");
+                //Log.d("HashCat", "---> line [" + line + "]");
 
-                switch (scanner.next()) {
+                String token = scanner.next();
+
+                if (token.startsWith(apMac)) {
+                    // Password line as "<ap mac>:<client mac>:<ssid>:<password>"
+                    progress.password = token.substring(token.lastIndexOf(':') + 1);
+                    Log.d("HashCat", "---> Got password [" + progress.password + "]");
+                    continue;
+                }
+
+                switch (token) {
                     case "STATUS":
                         progress.state = scanner.nextInt();
                         break;
@@ -196,26 +253,45 @@ public class HashCat extends Thread implements Handler.Callback {
                 }
             }
 
+            if (!process.waitFor(1000, TimeUnit.MILLISECONDS))
+                throw new Exception("Timeout waiting hashcat to finish");
+
+            if (process.exitValue() != 0) {
+                if (errStream.ready()) {
+                    StringBuilder sb = new StringBuilder();
+                    char[] buffer = new char[1024];
+                    int length;
+                    while ((length = errStream.read(buffer)) != -1)
+                        sb.append(buffer, 0, length);
+                    throw new Exception(sb.toString());
+                }
+                else
+                    throw new Exception("Unknown error: " + process.exitValue());
+            }
+
             notifyHandler(MSG_SET_STATE, Job.State.NOT_RUNNING);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             e.printStackTrace();
             notifyHandler(MSG_ERROR, e);
             abort();
         }
         finally {
-            if (iss != null)
-                try { iss.close(); } catch (IOException ignored) {}
+            if (outStream != null)
+                try { outStream.close(); } catch (IOException ignored) {}
+            if (errStream != null)
+                try { errStream.close(); } catch (IOException ignored) {}
             if (scanner != null)
                 scanner.close();
         }
     }
 
+    // Call this instead of interrupt()
     public void abort() {
         if (process != null) {
             if (process.isAlive()) {
                 notifyHandler(MSG_SET_STATE, Job.State.STOPPING);
-                // TODO send 'q' instead
+                // TODO send 'q' instead, join(a couple of secs) and destroy
                 process.destroy();
                 try { join(); } catch (InterruptedException ignored) {}
             }

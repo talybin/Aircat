@@ -151,7 +151,10 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         if (jobs.isEmpty())
             return;
 
-        new HashCat(getContext(), jobs.get(0)).start();
+        Context context = getContext();
+
+        if (!jobs.get(0).start(context))
+            Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
     }
 
     private void removeSelectedJobs() {

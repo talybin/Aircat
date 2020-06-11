@@ -10,13 +10,30 @@
     android:paddingHorizontal="20dp"
     android:paddingVertical="10dp">
 
-    <TextView
-        android:id="@+id/job_item_ssid"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TextView"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/job_item_ssid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="TextView"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/job_item_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAlignment="textEnd"
+            android:textColor="#4CAF50"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/job_item_progress_bar"
@@ -79,18 +96,6 @@
         android:drawablePadding="4dp"
         android:text="@string/estimated_time"
         android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/job_item_password"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:drawableStart="@drawable/ic_password_16dp"
-        android:drawablePadding="4dp"
-        android:text="@android:string/unknownName"
-        android:textColor="#DD8888"
-        android:textSize="12sp"
-        android:visibility="gone" />
 
     <TextView
         android:id="@+id/job_item_pmkid"

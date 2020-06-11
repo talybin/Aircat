@@ -77,8 +77,7 @@ public class JobDetailsFragment extends Fragment {
     }
 
     private void startJob() {
-        new HashCat(context, job).start();
-        //if (!jobManager.start(job))
-        //    Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+        if (!job.start(context))
+            Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
     }
 }

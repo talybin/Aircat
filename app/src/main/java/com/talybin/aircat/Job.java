@@ -17,37 +17,9 @@ public class Job extends ListenerBase<Job.Listener> {
         STOPPING,
     }
 
-    // HashCat progress
-    public static class Progress {
-        // State of the job:
-        //  3 (running)
-        //  5 (exhausted)
-        //  6 (cracked)
-        //  7 (aborted)
-        //  8 (quit)
-        public int state = 0;
-
-        // Speed in hashes per second
-        public int speed = 0;
-
-        // Number of hashes completed so far
-        public long nr_complete = 0;
-
-        // Total number of hashes
-        public long total = 0;
-
-        // For debug purpose
-        @NonNull
-        @SuppressLint("DefaultLocale")
-        public String toString() {
-            return String.format("state: %d, speed: %d H/s, complete: %d/%d",
-                    state, speed, nr_complete, total);
-        }
-    }
-
     public interface Listener {
         void onJobStateChange(Job job);
-        void onJobProgressChange(Job job);
+        void onHashCatProgressChange(Job job);
     }
 
     private String apMac = null;
@@ -56,8 +28,9 @@ public class Job extends ListenerBase<Job.Listener> {
     private String pmkId = null;
 
     private State state = State.NOT_RUNNING;
-    private Progress progress = null;
     private String wordListPath = null;
+
+    private HashCat hashCat = null;
 
     public Job(ApInfo apInfo) {
         super();
@@ -87,10 +60,6 @@ public class Job extends ListenerBase<Job.Listener> {
 
     public String getSSID() {
         return ssid;
-    }
-
-    public Progress getProgress() {
-        return progress;
     }
 
     // This hash used to store and find in the list
@@ -134,9 +103,29 @@ public class Job extends ListenerBase<Job.Listener> {
         }
     }
 
-    public void setProgress(Progress newProgress) {
-        progress = newProgress;
+    public HashCat.Progress getProgress() {
+        return hashCat != null ? hashCat.getProgress() : null;
+    }
+
+    public void setProgress(HashCat.Progress newProgress) {
         for (Listener listener : listeners)
-            listener.onJobProgressChange(this);
+            listener.onHashCatProgressChange(this);
+    }
+
+    public boolean start(Context context) {
+        return start(context, null);
+    }
+
+    public boolean start(Context context, HashCat.Listener listener) {
+        if (state != State.NOT_RUNNING)
+            return false;
+
+        if (hashCat != null)
+            hashCat.abort();
+
+        hashCat = new HashCat(context, this, listener);
+        hashCat.start();
+
+        return true;
     }
 }
