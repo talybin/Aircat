@@ -10,7 +10,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -34,6 +33,7 @@ public class HashCat extends Thread implements Handler.Callback {
     private static final int MSG_ERROR = 1;
     private static final int MSG_SET_STATE = 2;
     private static final int MSG_SET_PROGRESS = 3;
+    private static final int MSG_SET_PASSWORD = 4;
 
     // Return working directory of hashcat
     public static String getWorkingDir(Context context) {
@@ -41,7 +41,7 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     // Never null
-    public Progress getProgress() {
+    Progress getProgress() {
         return progress;
     }
 
@@ -53,19 +53,16 @@ public class HashCat extends Thread implements Handler.Callback {
         //  6 (cracked)
         //  7 (aborted)
         //  8 (quit)
-        public int state = 0;
+        int state = 0;
 
         // Speed in hashes per second
-        public int speed = 0;
+        int speed = 0;
 
         // Number of hashes completed so far
-        public long nr_complete = 0;
+        long nr_complete = 0;
 
         // Total number of hashes
-        public long total = 0;
-
-        // Password (null if not found)
-        public String password = null;
+        long total = 0;
 
         // For debug purpose
         @NonNull
@@ -173,6 +170,10 @@ public class HashCat extends Thread implements Handler.Callback {
                 job.setProgress((Progress)msg.obj);
                 break;
 
+            case HashCat.MSG_SET_PASSWORD:
+                job.setPassword((String)msg.obj);
+                break;
+
             case HashCat.MSG_ERROR:
                 listener.onHashCatError(this, (Exception)msg.obj);
                 break;
@@ -229,8 +230,7 @@ public class HashCat extends Thread implements Handler.Callback {
 
                 if (token.startsWith(apMac)) {
                     // Password line as "<ap mac>:<client mac>:<ssid>:<password>"
-                    progress.password = token.substring(token.lastIndexOf(':') + 1);
-                    Log.d("HashCat", "---> Got password [" + progress.password + "]");
+                    notifyHandler(MSG_SET_PASSWORD, token.substring(token.lastIndexOf(':') + 1));
                     continue;
                 }
 

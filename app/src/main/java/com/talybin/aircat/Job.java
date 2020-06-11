@@ -19,13 +19,14 @@ public class Job extends ListenerBase<Job.Listener> {
 
     public interface Listener {
         void onJobStateChange(Job job);
-        void onHashCatProgressChange(Job job);
+        void onHashCatProgressChange(Job job, HashCat.Progress progress);
     }
 
     private String apMac = null;
     private String clientMac = null;
     private String ssid = null;
     private String pmkId = null;
+    private String password = null;
 
     private State state = State.NOT_RUNNING;
     private String wordListPath = null;
@@ -100,6 +101,9 @@ public class Job extends ListenerBase<Job.Listener> {
             state = newState;
             for (Listener listener : listeners)
                 listener.onJobStateChange(this);
+
+            if (state == State.NOT_RUNNING)
+                setProgress(null);
         }
     }
 
@@ -109,7 +113,15 @@ public class Job extends ListenerBase<Job.Listener> {
 
     public void setProgress(HashCat.Progress newProgress) {
         for (Listener listener : listeners)
-            listener.onHashCatProgressChange(this);
+            listener.onHashCatProgressChange(this, newProgress);
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String newPassword) {
+        password = newPassword;
     }
 
     public boolean start(Context context) {

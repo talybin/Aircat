@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -64,7 +65,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ssid.setText(job.getSSID());
 
             onJobStateChange(job);
-            onHashCatProgressChange(job);
+            onHashCatProgressChange(job, job.getProgress());
         }
 
         public Job getJob() {
@@ -77,9 +78,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         @Override
-        public void onHashCatProgressChange(Job job) {
+        public void onHashCatProgressChange(Job job, HashCat.Progress progress) {
             Context context = itemView.getContext();
-            HashCat.Progress progress = job.getProgress();
 
             float percentComplete = 0;
             long estimated = 0;
@@ -90,10 +90,6 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 speed.setText(context.getString(R.string.cracking_speed, progress.speed));
                 if (progress.speed > 0)
                     estimated = (progress.total - progress.nr_complete) / progress.speed;
-
-                // Show password if found
-                if (progress.state == 6 && progress.password != null)
-                    password.setText(progress.password);
             }
             else {
                 speed.setText(context.getString(R.string.cracking_speed, 0));
@@ -103,6 +99,9 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             estTime.setText(context.getString(R.string.estimated_time, estimated > 0 ?
                     DateUtils.formatElapsedTime(estimated) : context.getString(android.R.string.unknownName)));
+
+            String pw = job.getPassword();
+            password.setText(pw != null ? pw : "");
         }
 
         @Override
