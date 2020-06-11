@@ -9,13 +9,14 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.Objects;
 
 
 public class JobDetailsFragment extends Fragment {
@@ -24,6 +25,12 @@ public class JobDetailsFragment extends Fragment {
 
     private JobManager jobManager;
     private Job job;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -49,7 +56,10 @@ public class JobDetailsFragment extends Fragment {
         }
 
         // Set fragment title
-        Objects.requireNonNull(((MainActivity) context).getSupportActionBar()).setTitle(job.getSSID());
+        //Objects.requireNonNull(((MainActivity) context).getSupportActionBar()).setTitle(job.getSSID());
+
+        JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(view);
+        viewHolder.bindData(job);
 
         // Fill fields
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
@@ -59,17 +69,30 @@ public class JobDetailsFragment extends Fragment {
 
         // Start button
         Button startButton = (Button)view.findViewById(R.id.job_details_but_start);
-        startButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startJob();
-            }
-        });
+        startButton.setOnClickListener(v -> { startJob(); });
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.job_detail_menu, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_start:
+                startJob();
+                return true;
+            case R.id.action_remove:
+                removeJob();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void goBack() {
@@ -79,5 +102,10 @@ public class JobDetailsFragment extends Fragment {
     private void startJob() {
         if (!job.start(context))
             Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+    }
+
+    private void removeJob() {
+        jobManager.remove(job);
+        goBack();
     }
 }

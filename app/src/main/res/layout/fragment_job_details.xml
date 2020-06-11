@@ -10,15 +10,57 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:divider="@android:drawable/divider_horizontal_textfield"
-        android:dividerPadding="6dp"
+        android:dividerPadding="20dp"
         android:orientation="vertical"
-        android:paddingHorizontal="10dp"
         android:showDividers="middle">
+
+        <include
+            layout="@layout/job_list_item"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                app:srcCompat="@drawable/ic_wordlist_16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Wordlist"
+                    android:textAllCaps="true"
+                    android:textColor="#a0a0a0"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/job_details_wordlist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="rockyou.txt"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
+            android:paddingHorizontal="12dp"
             android:paddingVertical="5dp">
 
             <LinearLayout
@@ -131,47 +173,13 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingVertical="10dp">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="match_parent"
-                app:srcCompat="@drawable/ic_wordlist_16dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Wordlist"
-                    android:textAllCaps="true"
-                    android:textColor="#a0a0a0"
-                    android:textSize="10sp" />
-
-                <TextView
-                    android:id="@+id/job_details_wordlist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="rockyou.txt"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-        </LinearLayout>
-
         <Button
             android:id="@+id/job_details_but_start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Start" />
+            android:layout_marginHorizontal="16dp"
+            android:text="Start"
+            android:visibility="gone" />
 
     </LinearLayout>
 </ScrollView>

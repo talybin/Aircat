@@ -32,12 +32,6 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
     private JobManager jobManager;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    @Override
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState
@@ -94,24 +88,6 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.job_menu, menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_start:
-                startSelectedJobs();
-                return true;
-            case R.id.action_remove:
-                removeSelectedJobs();
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
     public void onNewJob(Job job) {
         // TODO add listeners here
         adapter.notifyDataSetChanged();
@@ -145,6 +121,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         });
     }*/
 
+    /*
     private void startSelectedJobs() {
         // Just a test right now
         List<Job> jobs = jobManager.getJobs();
@@ -165,4 +142,5 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
             adapter.notifyDataSetChanged();
         }
     }
+     */
 }

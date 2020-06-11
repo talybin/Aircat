@@ -3,6 +3,7 @@
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="jobs_fragment_label">Aircat</string>
+    <string name="job_detail_fragment_label">Details</string>
     <string name="create_job_fragment_label">Select Access Point</string>
     <string name="next">Next</string>
     <string name="enabling_wifi">Enabling WiFi</string>
@@ -15,7 +16,7 @@
     <string name="error_occurred">Error occurred</string>
     <string name="pmkid_not_supported">%1$s do not support PMKID</string>
     <string name="no_answer">No answer from %1$s</string>
-    <string name="complete_percent">Complete: %1$.2f%%</string>
+    <string name="complete_percent">Complete: %1$.1f%%</string>
     <string name="cracking_speed">Cracking speed: %1$,d H/s</string>
     <string name="estimated_time">Estimated time: %1$s</string>
     <string name="start">Start</string>

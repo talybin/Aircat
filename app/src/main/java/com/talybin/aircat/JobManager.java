@@ -61,6 +61,10 @@ public class JobManager {
         jobs.remove(pos);
     }
 
+    public void remove(Job job) {
+        jobs.remove(job);
+    }
+
     // Get job by its hash.
     // Return null if not found.
     public Job get(String hash) {
