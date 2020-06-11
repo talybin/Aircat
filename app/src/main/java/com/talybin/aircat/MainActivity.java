@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
         String filesPath = filesDir.toString();
 
         // Setup constants
-        HashCat.setExePath(filesPath + "/hashcat/hashcat");
+        //HashCat2.setExePath(filesPath + "/hashcat/hashcat");
         TcpDump.setExePath(filesPath + "/tcpdump/tcpdump");
         //WordLists.setBuiltInPath(filesPath + "/wordlists/built-in.txt");
         WordLists.setBuiltInPath(filesPath + "/wordlists/english.txt");

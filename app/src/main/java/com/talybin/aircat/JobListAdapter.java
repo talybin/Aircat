@@ -2,7 +2,6 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.text.format.DateUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +28,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     static class JobViewHolder extends RecyclerView.ViewHolder
+            implements Job.Listener, View.OnAttachStateChangeListener
     {
         private TextView ssid;
         private TextView status;
@@ -50,24 +50,44 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             estTime = (TextView)itemView.findViewById(R.id.job_item_est_time);
 
             job = null;
+            itemView.addOnAttachStateChangeListener(this);
         }
 
         void bindData(Job job) {
-            Context context = itemView.getContext();
+            if (this.job != null)
+                this.job.removeListener(this);
             this.job = job;
+            this.job.addListener(this);
 
-            ssid.setText(job.ssid);
-            status.setText(job.getStateAsStr(context));
+            ssid.setText(job.getSSID());
+
+            onJobStateChange(job);
+            onJobProgressChange(job);
+        }
+
+        public Job getJob() {
+            return job;
+        }
+
+        @Override
+        public void onJobStateChange(Job job) {
+            status.setText(job.getStateAsStr(itemView.getContext()));
+        }
+
+        @Override
+        public void onJobProgressChange(Job job) {
+            Job.Progress progress = job.getProgress();
+            Context context = itemView.getContext();
 
             float percentComplete = 0;
             long estimated = 0;
 
-            if (job.status != null && job.status.total > 0) {
-                percentComplete = job.status.nr_complete * 100.f / job.status.total;
+            if (progress != null && progress.total > 0) {
+                percentComplete = progress.nr_complete * 100.f / progress.total;
 
-                speed.setText(context.getString(R.string.cracking_speed, job.status.speed));
-                if (job.status.speed > 0)
-                    estimated = (job.status.total - job.status.nr_complete) / job.status.speed;
+                speed.setText(context.getString(R.string.cracking_speed, progress.speed));
+                if (progress.speed > 0)
+                    estimated = (progress.total - progress.nr_complete) / progress.speed;
             }
             else {
                 speed.setText(context.getString(R.string.cracking_speed, 0));
@@ -79,8 +99,14 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     DateUtils.formatElapsedTime(estimated) : context.getString(android.R.string.unknownName)));
         }
 
-        public Job getJob() {
-            return job;
+        @Override
+        public void onViewAttachedToWindow(View v) { }
+
+        @Override
+        public void onViewDetachedFromWindow(View v) {
+            if (job != null)
+                job.removeListener(this);
+            v.removeOnAttachStateChangeListener(this);
         }
     }
 

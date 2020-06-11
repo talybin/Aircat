@@ -1,93 +1,150 @@
 package com.talybin.aircat;
 
-import android.os.AsyncTask;
-import android.os.Bundle;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.DoubleBuffer;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
-public class HashCat extends Thread {
+public class HashCat extends Thread implements Handler.Callback {
 
-    private static final String LOG_TAG = "HashCat";
-    private static String exePath = null;
-
-    public static void setExePath(String path) {
-        exePath = path;
-    }
-
-    public static String getExePath() {
-        return exePath;
-    }
-
-    private Job job;
-    private Handler handler;
+    private Handler handler = null;
+    private Listener listener = null;
+    private Job job = null;
     private Process process = null;
+
     private File hashFile = null;
+    private File workingDir = null;
 
     // Handler messages
-    public static final int MSG_ERROR = 1;
-    public static final int MSG_SET_STATE = 2;
-    public static final int MSG_STATUS = 3;
+    private static final int MSG_ERROR = 1;
+    private static final int MSG_SET_STATE = 2;
+    private static final int MSG_SET_PROGRESS = 3;
 
-    public class Status {
-        // State of the job:
-        //  3 (running)
-        //  5 (exhausted)
-        //  6 (cracked)
-        //  7 (aborted)
-        //  8 (quit)
-        int state = 0;
+    // Return working directory of hashcat
+    public static String getWorkingDir(Context context) {
+        return context.getFilesDir().getPath() + "/hashcat";
+    }
 
-        // Speed in hashes per second
-        int speed = 0;
+    public interface Listener {
+        void onHashCatError(HashCat instance, Exception ex);
+    }
 
-        // Number of hashes completed so far
-        long nr_complete = 0;
+    // Default listener used when no listener given
+    private static class DefaultListener implements Listener {
 
-        // Total number of hashes
-        long total = 0;
+        private Context context;
 
-        // For debug purpose
-        public String toString() {
-            return String.format("state: %d, speed: %d H/s, complete: %d/%d",
-                    state, speed, nr_complete, total);
+        DefaultListener(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void onHashCatError(HashCat instance, Exception ex) {
+            Toast.makeText(context, ex.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
-    public HashCat(Job job, Handler handler) {
+    // Constructor
+    public HashCat(Context context, Job job, Listener listener) {
+        super();
+
         this.job = job;
-        this.handler = handler;
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-
-        if (process != null && process.isAlive())
-            process.destroy();
-
-        if (hashFile != null)
-            hashFile.delete();
-    }
-
-    @Override
-    public void run() {
-        abort();
-        process = null;
+        this.listener = listener;
+        this.workingDir = Paths.get(getWorkingDir(context)).toFile();
+        this.handler = new Handler(this);
 
         createHashFile();
+    }
+
+    // Constructor
+    public HashCat(Context context, Job job) {
+        this(context, job, new DefaultListener(context));
+    }
+
+    // Destructor
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    // Clean up
+    private void close() {
+        if (hashFile != null) {
+            hashFile.delete();
+            hashFile = null;
+        }
+    }
+
+    // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
+    private static String makeHash(Job job) {
+        return String.format("%s*%s*%s*%s",
+                job.getHash(),
+                job.getApMac().replace(":", ""),
+                job.getClientMac().replace(":", ""),
+                Utils.toHexSequence(job.getSSID()));
+    }
+
+    // Create hash file containing the hash to be cracked
+    private void createHashFile() {
+        BufferedWriter bufferedWriter = null;
+        try {
+            hashFile = File.createTempFile("hashcat-", ".hash");
+            // Store hash
+            bufferedWriter = new BufferedWriter(new FileWriter(hashFile));
+            bufferedWriter.write(makeHash(job));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            listener.onHashCatError(this, e);
+            close();
+        }
+        finally {
+            if (bufferedWriter != null)
+                try { bufferedWriter.close();  } catch (IOException ignored) {}
+        }
+    }
+
+    // Post message to handler
+    private void notifyHandler(int what, Object data) {
+        handler.sendMessage(handler.obtainMessage(what, data));
+    }
+
+    // Message queue handler
+    public boolean handleMessage(Message msg) {
+        Log.d("HashCatHandler", "---> Got message: " + msg.what);
+        switch (msg.what) {
+            case HashCat.MSG_SET_STATE:
+                job.setState((Job.State)msg.obj);
+                break;
+
+            case HashCat.MSG_SET_PROGRESS:
+                job.setProgress((Job.Progress)msg.obj);
+                break;
+
+            case HashCat.MSG_ERROR:
+                listener.onHashCatError(this, (Exception)msg.obj);
+                break;
+        }
+        return true;
+    }
+
+    // Execute hashcat session
+    @Override
+    public void run() {
         if (hashFile == null)
             return;
 
+        notifyHandler(MSG_SET_PROGRESS, null);
         notifyHandler(MSG_SET_STATE, Job.State.STARTING);
 
         InputStreamReader iss = null;
@@ -108,13 +165,13 @@ public class HashCat extends Thread {
                     // No environment variables
                     null,
                     // Working directory
-                    Paths.get(exePath).getParent().toFile()
+                    workingDir
             );
 
             iss = new InputStreamReader(process.getInputStream());
             scanner = new Scanner(iss);
 
-            Status curStatus = new Status();
+            Job.Progress progress = new Job.Progress();
 
             while (scanner.hasNext()) {
                 //String line = scanner.nextLine();
@@ -122,19 +179,19 @@ public class HashCat extends Thread {
 
                 switch (scanner.next()) {
                     case "STATUS":
-                        curStatus.state = scanner.nextInt();
+                        progress.state = scanner.nextInt();
                         break;
                     case "SPEED":
-                        curStatus.speed = scanner.nextInt();
+                        progress.speed = scanner.nextInt();
                         break;
                     case "PROGRESS":
-                        curStatus.nr_complete = scanner.nextLong();
+                        progress.nr_complete = scanner.nextLong();
                         // Send status
-                        if (curStatus.nr_complete == 0) {
-                            curStatus.total = scanner.nextLong();
+                        if (progress.nr_complete == 0) {
+                            progress.total = scanner.nextLong();
                             notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
                         }
-                        notifyHandler(MSG_STATUS, curStatus);
+                        notifyHandler(MSG_SET_PROGRESS, progress);
                         break;
                 }
             }
@@ -143,49 +200,14 @@ public class HashCat extends Thread {
         }
         catch (IOException e) {
             e.printStackTrace();
-            abort();
-            //listener.onError(e.getMessage());
             notifyHandler(MSG_ERROR, e);
+            abort();
         }
         finally {
             if (iss != null)
                 try { iss.close(); } catch (IOException ignored) {}
             if (scanner != null)
                 scanner.close();
-        }
-    }
-
-    // Create hash file containing the hash to be cracked
-    private void createHashFile() {
-        // Hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
-        String hash = String.format("%s*%s*%s*%s",
-                job.pmkId,
-                job.apMac.replace(":", ""),
-                job.clientMac.replace(":", ""),
-                Utils.toHexSequence(job.ssid));
-
-        // Create hash file
-        BufferedWriter bufferedWriter = null;
-        try {
-            hashFile = File.createTempFile("hashcat-", ".hash");
-            // Store hash
-            bufferedWriter = new BufferedWriter(new FileWriter(hashFile));
-            bufferedWriter.write(hash);
-            bufferedWriter.close();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-
-            if (bufferedWriter != null)
-                try { bufferedWriter.close();  } catch (IOException ignored) {}
-
-            if (hashFile != null) {
-                hashFile.delete();
-                hashFile = null;
-            }
-
-            //listener.onError(e.getMessage());
-            notifyHandler(MSG_ERROR, e);
         }
     }
 
@@ -201,134 +223,4 @@ public class HashCat extends Thread {
             notifyHandler(MSG_SET_STATE, Job.State.NOT_RUNNING);
         }
     }
-
-    private void notifyHandler(int what, Object data) {
-        handler.sendMessage(handler.obtainMessage(what, data));
-    }
-/*
-    private void reportError(Exception ex) {
-        Message msg = handler.obtainMessage(MSG_ERROR, ex);
-        handler.sendMessage(msg);
-    }
-
-    // TODO jobManger.setState(job, Job.State.RUNNING)? (own handler)
-    private void updateState(Job.State newState) {
-        handler.sendMessage(
-                handler.obtainMessage(MSG_SET_STATE, newState));
-    }*/
-
-
-
-    /*
-    private static class Session extends AsyncTask<Job, String, String> {
-
-        private Listener listener;
-        private Process hashCatProcess = null;
-
-        Session(Listener listener) {
-            this.listener = listener;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            hashCatProcess = null;
-        }
-
-        @Override
-        protected String doInBackground(Job... jobs) {
-            // Support for only one job right now
-            Job job2 = jobs[0];
-
-            // Hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
-            String hash = String.format("%s*%s*%s*%s",
-                    job2.pmkId,
-                    job2.apMac.replace(":", ""),
-                    job2.clientMac.replace(":", ""),
-                    Utils.toHexSequence(job2.ssid));
-
-            BufferedWriter bufferedWriter = null;
-            InputStreamReader iss = null;
-            Scanner scanner = null;
-
-            try {
-                // Create hash file
-                File hashFile = File.createTempFile("hashcat-", ".hash");
-                hashFile.deleteOnExit();
-
-                // Store hash
-                bufferedWriter = new BufferedWriter(new FileWriter(hashFile));
-                bufferedWriter.write(hash);
-                bufferedWriter.close();
-                bufferedWriter = null;
-
-                //publishProgress(hashFile.getAbsolutePath(), hashFile.getPath());
-
-                hashCatProcess = Runtime.getRuntime().exec(
-                        new String[] {
-                                "./hashcat",
-                                "-m", "16800",
-                                "-a", "0",
-                                "--status", "--status-timer=10",
-                                "--machine-readable",
-                                hashFile.getPath(),
-                                job2.getWordListPath(),
-                        },
-                        // No environment variables
-                        null,
-                        // Working directory
-                        Paths.get(exePath).getParent().toFile()
-                );
-
-                iss = new InputStreamReader(hashCatProcess.getInputStream());
-                scanner = new Scanner(iss);
-
-                while (scanner.hasNext()) {
-                    String line = scanner.nextLine();
-                    Log.d(LOG_TAG, "---> line [" + line + "]");
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-
-                if (bufferedWriter != null)
-                    try { bufferedWriter.close();  } catch (IOException ignored) {}
-
-                abort();
-            }
-            finally {
-                if (iss != null)
-                    try { iss.close(); } catch (IOException ignored) {}
-                if (scanner != null)
-                    scanner.close();
-            }
-
-            Log.d(LOG_TAG, "---> Done");
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            for (String s : values)
-                Log.d(LOG_TAG, "---> " + s);
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-        }
-
-        public void abort() {
-            if (hashCatProcess != null && hashCatProcess.isAlive()) {
-                hashCatProcess.destroy();
-                job.setState(Job.State.STOPPING);
-            }
-        }
-    }
-
-    public HashCat(Job job) {
-        this.job = job;
-//        job.setState(Job.State.STARTING);
-
-//        new Session(null).execute(job);
-    }
-     */
 }

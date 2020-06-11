@@ -49,12 +49,12 @@ public class JobDetailsFragment extends Fragment {
         }
 
         // Set fragment title
-        Objects.requireNonNull(((MainActivity) context).getSupportActionBar()).setTitle(job.ssid);
+        Objects.requireNonNull(((MainActivity) context).getSupportActionBar()).setTitle(job.getSSID());
 
         // Fill fields
-        ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.apMac);
-        ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.clientMac);
-        ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.pmkId);
+        ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
+        ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
+        ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getHash());
         ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordListName());
 
         // Start button
@@ -77,7 +77,8 @@ public class JobDetailsFragment extends Fragment {
     }
 
     private void startJob() {
-        if (!jobManager.start(job))
-            Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+        new HashCat(context, job).start();
+        //if (!jobManager.start(job))
+        //    Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
     }
 }

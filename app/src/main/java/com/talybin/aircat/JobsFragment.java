@@ -2,7 +2,6 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -10,15 +9,12 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.NavAction;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
-import androidx.navigation.ui.NavigationUI;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -88,12 +84,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         jobManager.addListener(this);
 
         // Test
-        Job test = new Job();
-        test.apMac = "c4:72:95:64:51:26";
-        test.clientMac = "6c:c7:ec:95:3d:63";
-        test.pmkId = "5265b2887ac349c4096eb7c2e4aaba61";
-        test.ssid = "IterationRentalsWifi";
-        jobManager.add(test);
+        jobManager.add(new Job());
     }
 
     @Override
@@ -126,6 +117,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         adapter.notifyDataSetChanged();
     }
 
+    /*
     @Override
     public void onStart(final HashCatHandler handler, final Job job) {
         handler.addListener(new HashCatHandler.Listener() {
@@ -140,7 +132,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
             }
 
             @Override
-            public void onStatus(HashCat.Status status) {
+            public void onStatus(HashCat2.Status status) {
                 Log.d("JobsFragment", "---> new status: " + status);
                 job.status = status;
                 adapter.notifyDataSetChanged();
@@ -151,7 +143,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
                 Toast.makeText(getContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
-    }
+    }*/
 
     private void startSelectedJobs() {
         // Just a test right now
@@ -159,10 +151,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
         if (jobs.isEmpty())
             return;
 
-        if (!jobManager.start(jobs.get(0))) {
-            Toast.makeText(getContext(),
-                    R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
-        }
+        new HashCat(getContext(), jobs.get(0)).start();
     }
 
     private void removeSelectedJobs() {

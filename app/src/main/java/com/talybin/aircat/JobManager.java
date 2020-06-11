@@ -11,7 +11,7 @@ public class JobManager {
 
     public interface Listener {
         void onNewJob(Job job);
-        void onStart(HashCatHandler handler, Job job);
+        //void onJobStart(HashCat handler, Job job);
     }
 
     private static JobManager instance = new JobManager();
@@ -43,10 +43,10 @@ public class JobManager {
     public void add(Job job) {
         jobs.add(job);
 
-        Log.d("JobManager::add", "---> ap mac [" + job.apMac + "]");
-        Log.d("JobManager::add", "---> client mac [" + job.clientMac + "]");
-        Log.d("JobManager::add", "---> pmkid [" + job.pmkId + "]");
-        Log.d("JobManager::add", "---> ssid [" + job.ssid + "]");
+        Log.d("JobManager::add", "---> ap mac [" + job.getApMac() + "]");
+        Log.d("JobManager::add", "---> client mac [" + job.getClientMac() + "]");
+        Log.d("JobManager::add", "---> pmkid [" + job.getHash() + "]");
+        Log.d("JobManager::add", "---> ssid [" + job.getSSID() + "]");
 
         // Notify others
         for (Listener listener : listeners)
@@ -71,18 +71,18 @@ public class JobManager {
         }
         return null;
     }
-
+/*
     public boolean start(Job job) {
         if (job.getState() != Job.State.NOT_RUNNING)
             return false;
 
-        job.status = null;
+        job.setProgress(null);
 
-        HashCatHandler handler = new HashCatHandler(job);
+        HashCat handler = new HashCat(job);
         for (Listener listener : listeners)
             listener.onStart(handler, job);
 
         handler.start();
         return true;
-    }
+    }*/
 }
