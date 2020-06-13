@@ -1,9 +1,13 @@
 package com.talybin.aircat;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.format.DateUtils;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
@@ -15,13 +19,35 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.HashSet;
 import java.util.Set;
 
-public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ActionMode.Callback {
+
+    @Override
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        mode.getMenuInflater().inflate(R.menu.job_detail_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        return false;
+    }
+
+    @Override
+    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        return false;
+    }
+
+    @Override
+    public void onDestroyActionMode(ActionMode mode) {
+        selected.clear();
+    }
 
     interface ClickListener {
         void onClick(Job job, int position);
     }
 
     private JobManager jobManager;
+    private Activity activity;
     private ClickListener clickListener;
 
     private static final int selectColor = Color.LTGRAY;
@@ -121,10 +147,11 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    public JobListAdapter(ClickListener clickListener) {
+    public JobListAdapter(Activity activity, ClickListener clickListener) {
         super();
 
         this.jobManager = JobManager.getInstance();
+        this.activity = activity;
         this.clickListener = clickListener;
     }
 
@@ -167,10 +194,14 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void toggleSelection(View v, int pos) {
         if (selected.contains(pos)) {
             selected.remove(pos);
-            v.setBackgroundColor(Color.WHITE);
+            v.setBackgroundColor(Color.TRANSPARENT);
         } else {
             selected.add(pos);
             v.setBackgroundColor(selectColor);
+        }
+
+        if (selected.size() > 0) {
+            activity.startActionMode(this);
         }
     }
 }

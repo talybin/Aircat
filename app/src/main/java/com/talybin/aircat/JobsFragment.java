@@ -55,7 +55,7 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
 
         // Specify an adapter
         // Navigate to job details on view click
-        adapter = new JobListAdapter(new JobListAdapter.ClickListener() {
+        adapter = new JobListAdapter(requireActivity(), new JobListAdapter.ClickListener() {
             @Override
             public void onClick(Job job, int position) {
                 Bundle args = new Bundle();
