@@ -12,6 +12,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface ClickListener {
@@ -20,6 +23,9 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private JobManager jobManager;
     private ClickListener clickListener;
+
+    private static final int selectColor = Color.LTGRAY;
+    private Set<Integer> selected = new HashSet<>();
 
     static class EmptyViewHolder extends RecyclerView.ViewHolder {
 
@@ -130,12 +136,12 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (viewType == R.layout.job_list_empty)
             return new EmptyViewHolder(view);
         else {
-            final JobViewHolder holder = new JobViewHolder(view);
-            view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    clickListener.onClick(holder.getJob(), holder.getAdapterPosition());
-                }
+            JobViewHolder holder = new JobViewHolder(view);
+            view.setOnClickListener(
+                    v -> clickListener.onClick(holder.getJob(), holder.getAdapterPosition()));
+            view.setOnLongClickListener(v -> {
+                toggleSelection(v, holder.getAdapterPosition());
+                return true;
             });
             return holder;
         }
@@ -156,5 +162,15 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public int getItemViewType(int pos) {
         return jobManager.getJobs().size() > 0 ?
                 R.layout.job_list_item : R.layout.job_list_empty;
+    }
+
+    private void toggleSelection(View v, int pos) {
+        if (selected.contains(pos)) {
+            selected.remove(pos);
+            v.setBackgroundColor(Color.WHITE);
+        } else {
+            selected.add(pos);
+            v.setBackgroundColor(selectColor);
+        }
     }
 }
