@@ -147,6 +147,7 @@ public class JobsFragment extends Fragment
                                     .forEach(jobManager::remove);
                             // Redraw
                             actionMode.finish();
+                            actionMode = null;
                             adapter.notifyDataSetChanged();
                             return true;
                         }
