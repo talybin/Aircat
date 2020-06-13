@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.format.DateUtils;
-import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,6 +13,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.HashSet;
@@ -39,6 +40,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
+        for (JobViewHolder holder : selected)
+            holder.select(false);
         selected.clear();
     }
 
@@ -49,9 +52,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private JobManager jobManager;
     private Activity activity;
     private ClickListener clickListener;
+    private ActionMode actionMode = null;
 
     private static final int selectColor = Color.LTGRAY;
-    private Set<Integer> selected = new HashSet<>();
+    private Set<JobViewHolder> selected = new HashSet<>();
 
     static class EmptyViewHolder extends RecyclerView.ViewHolder {
 
@@ -98,6 +102,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             onJobStateChange(job);
             onHashCatProgressChange(job, job.getProgress());
+        }
+
+        public void select(boolean en) {
+            itemView.setBackgroundColor(en ? Color.LTGRAY : Color.TRANSPARENT);
         }
 
         public Job getJob() {
@@ -167,7 +175,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             view.setOnClickListener(
                     v -> clickListener.onClick(holder.getJob(), holder.getAdapterPosition()));
             view.setOnLongClickListener(v -> {
-                toggleSelection(v, holder.getAdapterPosition());
+                toggleSelection(holder);
+                //toggleSelection(v, holder.getAdapterPosition());
                 return true;
             });
             return holder;
@@ -191,17 +200,39 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 R.layout.job_list_item : R.layout.job_list_empty;
     }
 
+    private void toggleSelection(JobViewHolder holder) {
+        if (selected.contains(holder)) {
+            selected.remove(holder);
+            holder.select(false);
+            if (selected.size() == 0) {
+                actionMode.finish();
+                actionMode = null;
+            }
+        }
+        else {
+            selected.add(holder);
+            holder.select(true);
+            if (selected.size() == 1) {
+                actionMode = ((AppCompatActivity)activity).startSupportActionMode(this);
+            }
+        }
+    }
+    /*
     private void toggleSelection(View v, int pos) {
         if (selected.contains(pos)) {
             selected.remove(pos);
             v.setBackgroundColor(Color.TRANSPARENT);
-        } else {
+            if (selected.size() == 0) {
+                actionMode.finish();
+                actionMode = null;
+            }
+        }
+        else {
             selected.add(pos);
             v.setBackgroundColor(selectColor);
+            if (selected.size() == 1) {
+                actionMode = ((AppCompatActivity)activity).startSupportActionMode(this);
+            }
         }
-
-        if (selected.size() > 0) {
-            activity.startActionMode(this);
-        }
-    }
+    }*/
 }
