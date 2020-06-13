@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -22,10 +23,13 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
 
-public class JobsFragment extends Fragment implements JobManager.Listener {
+public class JobsFragment extends Fragment
+        implements JobManager.Listener, JobListAdapter.Listener
+{
 
     private RecyclerView jobList;
     private RecyclerView.Adapter adapter;
+    private FloatingActionButton createJobBut;
 
     private NavController navController;
 
@@ -55,24 +59,14 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
 
         // Specify an adapter
         // Navigate to job details on view click
-        adapter = new JobListAdapter(requireActivity(), new JobListAdapter.ClickListener() {
-            @Override
-            public void onClick(Job job, int position) {
-                Bundle args = new Bundle();
-                args.putInt("job_position", position);
-                navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment, args);
-            }
-        });
+        AppCompatActivity acActivity = (AppCompatActivity)ctx;
+        adapter = new JobListAdapter(acActivity, this);
         jobList.setAdapter(adapter);
 
         // Create new job button
-        FloatingActionButton fab = view.findViewById(R.id.createNewJobBut);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                navController.navigate(R.id.action_JobsFragment_to_CreateJobFragment);
-            }
-        });
+        createJobBut = view.findViewById(R.id.createNewJobBut);
+        createJobBut.setOnClickListener(
+                v -> navController.navigate(R.id.action_JobsFragment_to_CreateJobFragment));
 
         // Listen to job list changes
         jobManager.addListener(this);
@@ -91,5 +85,22 @@ public class JobsFragment extends Fragment implements JobManager.Listener {
     public void onNewJob(Job job) {
         // TODO add listeners here
         adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onItemClick(Job job, int position) {
+        Bundle args = new Bundle();
+        args.putInt("job_position", position);
+        navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment, args);
+    }
+
+    @Override
+    public void onActionModeStarted() {
+        createJobBut.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onActionModeEnded() {
+        createJobBut.setVisibility(View.VISIBLE);
     }
 }

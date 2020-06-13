@@ -1,9 +1,9 @@
 package com.talybin.aircat;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,7 +24,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-        mode.getMenuInflater().inflate(R.menu.job_detail_menu, menu);
+        listener.onActionModeStarted();
+        mode.getMenuInflater().inflate(R.menu.job_select_menu, menu);
         return true;
     }
 
@@ -35,6 +36,11 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_remove:
+                Log.d("JobListAdapter", "---> remove action pressed");
+                return true;
+        }
         return false;
     }
 
@@ -43,15 +49,19 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         for (JobViewHolder holder : selected)
             holder.select(false);
         selected.clear();
+        listener.onActionModeEnded();
     }
 
-    interface ClickListener {
-        void onClick(Job job, int position);
+    interface Listener {
+        void onItemClick(Job job, int position);
+
+        void onActionModeStarted();
+        void onActionModeEnded();
     }
 
     private JobManager jobManager;
-    private Activity activity;
-    private ClickListener clickListener;
+    private Listener listener;
+    private AppCompatActivity appCompatActivity = null;
     private ActionMode actionMode = null;
 
     private static final int selectColor = Color.LTGRAY;
@@ -155,12 +165,12 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    public JobListAdapter(Activity activity, ClickListener clickListener) {
+    public JobListAdapter(AppCompatActivity activity, Listener listener) {
         super();
 
         this.jobManager = JobManager.getInstance();
-        this.activity = activity;
-        this.clickListener = clickListener;
+        this.listener = listener;
+        this.appCompatActivity = activity;
     }
 
     @NonNull
@@ -172,11 +182,14 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             return new EmptyViewHolder(view);
         else {
             JobViewHolder holder = new JobViewHolder(view);
-            view.setOnClickListener(
-                    v -> clickListener.onClick(holder.getJob(), holder.getAdapterPosition()));
+            view.setOnClickListener(v -> {
+                if (actionMode == null)
+                    listener.onItemClick(holder.getJob(), holder.getAdapterPosition());
+                else // We are in multi-selection mode, do the same as OnLongClickListener
+                    toggleSelection(holder);
+            });
             view.setOnLongClickListener(v -> {
                 toggleSelection(holder);
-                //toggleSelection(v, holder.getAdapterPosition());
                 return true;
             });
             return holder;
@@ -213,26 +226,14 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             selected.add(holder);
             holder.select(true);
             if (selected.size() == 1) {
-                actionMode = ((AppCompatActivity)activity).startSupportActionMode(this);
+                actionMode = appCompatActivity.startSupportActionMode(this);
+                //actionMode = ((AppCompatActivity)holder.itemView.getContext())
+                //.startSupportActionMode(this);
             }
+        }
+
+        if (actionMode != null && selected.size() > 0) {
+            actionMode.setTitle("" + selected.size());
         }
     }
-    /*
-    private void toggleSelection(View v, int pos) {
-        if (selected.contains(pos)) {
-            selected.remove(pos);
-            v.setBackgroundColor(Color.TRANSPARENT);
-            if (selected.size() == 0) {
-                actionMode.finish();
-                actionMode = null;
-            }
-        }
-        else {
-            selected.add(pos);
-            v.setBackgroundColor(selectColor);
-            if (selected.size() == 1) {
-                actionMode = ((AppCompatActivity)activity).startSupportActionMode(this);
-            }
-        }
-    }*/
 }
