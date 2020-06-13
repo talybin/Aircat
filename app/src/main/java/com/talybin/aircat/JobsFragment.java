@@ -2,17 +2,15 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -21,19 +19,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class JobsFragment extends Fragment
         implements JobManager.Listener, JobListAdapter.Listener
 {
 
-    private RecyclerView jobList;
     private RecyclerView.Adapter adapter;
     private FloatingActionButton createJobBut;
 
     private NavController navController;
 
     private JobManager jobManager;
+
+    private Set<JobListAdapter.JobViewHolder> selectedItems = new HashSet<>();
+    private ActionMode actionMode = null;
 
     @Override
     public View onCreateView(
@@ -53,14 +54,14 @@ public class JobsFragment extends Fragment
         jobManager = JobManager.getInstance();
 
         // Job list
-        jobList = view.findViewById(R.id.job_list);
+        RecyclerView jobList = view.findViewById(R.id.job_list);
         jobList.setLayoutManager(new LinearLayoutManager(ctx));
         jobList.setHasFixedSize(true);
 
         // Specify an adapter
         // Navigate to job details on view click
-        AppCompatActivity acActivity = (AppCompatActivity)ctx;
-        adapter = new JobListAdapter(acActivity, this);
+        //AppCompatActivity acActivity = (AppCompatActivity)ctx;
+        adapter = new JobListAdapter(this);
         jobList.setAdapter(adapter);
 
         // Create new job button
@@ -88,19 +89,83 @@ public class JobsFragment extends Fragment
     }
 
     @Override
-    public void onItemClick(Job job, int position) {
-        Bundle args = new Bundle();
-        args.putInt("job_position", position);
-        navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment, args);
+    public void onItemClick(JobListAdapter.JobViewHolder holder) {
+        if (actionMode == null) {
+            // Show details
+            Bundle args = new Bundle();
+            args.putInt("job_position", holder.getAdapterPosition());
+            navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment, args);
+        }
+        else // We are in multi-selection mode, do the same as onItemLongClick
+            toggleSelection(holder);
     }
 
     @Override
-    public void onActionModeStarted() {
-        createJobBut.setVisibility(View.GONE);
+    public boolean onItemLongClick(JobListAdapter.JobViewHolder holder) {
+        toggleSelection(holder);
+        return true;
     }
 
-    @Override
-    public void onActionModeEnded() {
-        createJobBut.setVisibility(View.VISIBLE);
+    private void toggleSelection(JobListAdapter.JobViewHolder holder) {
+        if (selectedItems.contains(holder)) {
+            // Unselect item
+            selectedItems.remove(holder);
+            holder.select(false);
+            // Exit action mode on last one
+            if (selectedItems.size() == 0) {
+                actionMode.finish();
+                actionMode = null;
+            }
+        }
+        else { // Add selected item
+            selectedItems.add(holder);
+            holder.select(true);
+            // Enter action mode on first one
+            if (selectedItems.size() == 1) {
+                AppCompatActivity activity = (AppCompatActivity)requireActivity();
+                actionMode = activity.startSupportActionMode(new ActionMode.Callback() {
+                    @Override
+                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                        createJobBut.setVisibility(View.GONE);
+                        mode.getMenuInflater().inflate(R.menu.job_select_menu, menu);
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                        if (item.getItemId() == R.id.action_remove) {
+                            // Remove selected items. Since removal is by position, we
+                            // need to sort and remove in reverse order.
+                            selectedItems.stream()
+                                    .map(JobListAdapter.JobViewHolder::getAdapterPosition)
+                                    .sorted((i1, i2) -> i2 - i1)    // Reverse sort
+                                    .forEach(jobManager::remove);
+                            // Redraw
+                            actionMode.finish();
+                            adapter.notifyDataSetChanged();
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    @Override
+                    public void onDestroyActionMode(ActionMode mode) {
+                        for (JobListAdapter.JobViewHolder selHolder : selectedItems)
+                            selHolder.select(false);
+                        selectedItems.clear();
+                        createJobBut.setVisibility(View.VISIBLE);
+                    }
+                });
+            }
+        }
+
+        // Set title
+        if (actionMode != null && selectedItems.size() > 0)
+            actionMode.setTitle("" + selectedItems.size());
     }
 }
