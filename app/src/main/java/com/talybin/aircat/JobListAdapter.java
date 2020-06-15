@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,6 +46,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private TextView estTime;
         private ProgressBar progressBar;
         private View optionsBut;
+        private View runGroup;
 
         private Job job;
 
@@ -60,11 +62,13 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             estTime = (TextView)itemView.findViewById(R.id.job_item_est_time);
 
             optionsBut = itemView.findViewById(R.id.job_item_options);
+            runGroup = itemView.findViewById(R.id.job_item_run_group);
 
             /*
             ImageView copyPasswd = (ImageView)itemView.findViewById(R.id.job_item_copy_passwd);
             copyPasswd.setOnClickListener(v -> doCopyPassword());
              */
+            optionsBut.setOnClickListener(v -> onOptionsMenu());
 
             job = null;
             itemView.addOnAttachStateChangeListener(this);
@@ -88,6 +92,21 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         public Job getJob() {
             return job;
+        }
+
+        private void onOptionsMenu() {
+            Context ctx = itemView.getContext();
+            PopupMenu popup = new PopupMenu(ctx, optionsBut);
+            popup.inflate(R.menu.job_item_menu);
+            popup.setOnMenuItemClickListener(menuItem -> {
+                switch (menuItem.getItemId()) {
+                    case R.id.job_menu_copy_passwd:
+                        doCopyPassword();
+                        return true;
+                }
+                return false;
+            });
+            popup.show();
         }
 
         private void doCopyPassword() {

@@ -22,6 +22,7 @@
     <string name="start">Start</string>
     <string name="pause">Pause</string>
     <string name="remove">Remove</string>
+    <string name="connect">Connect</string>
     <string name="not_running">Not running</string>
     <string name="starting">Starting</string>
     <string name="running">Running</string>
