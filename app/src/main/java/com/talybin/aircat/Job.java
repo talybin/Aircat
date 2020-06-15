@@ -133,6 +133,9 @@ public class Job extends ListenerBase<Job.Listener> {
 
         stop();
 
+        // Reset password
+        password = null;
+
         hashCat = new HashCat(context, this, listener);
         hashCat.start();
 

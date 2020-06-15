@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:clickable="true"
@@ -10,29 +11,63 @@
     android:paddingHorizontal="20dp"
     android:paddingVertical="10dp">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/job_item_ssid"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:text="TextView"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/job_item_ssid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="TextView"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+    <LinearLayout
+        android:id="@+id/job_item_passwd_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingVertical="5dp">
 
-        <TextView
-            android:id="@+id/job_item_password"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="32dp"
+            android:layout_height="match_parent"
+            app:srcCompat="@drawable/ic_password_16dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="6dp"
             android:layout_weight="1"
-            android:textAlignment="textEnd"
-            android:textColor="#4665E5"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/password"
+                android:textAllCaps="true"
+                android:textColor="#a0a0a0"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/job_item_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawablePadding="4dp"
+                android:text="sample123"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/job_item_copy_passwd"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:clickable="true"
+            android:focusable="true"
+            android:tint="@android:color/darker_gray"
+            app:srcCompat="?attr/actionModeCopyDrawable" />
+
     </LinearLayout>
 
     <ProgressBar
@@ -70,23 +105,10 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/job_item_wordlist"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:drawableStart="@drawable/ic_wordlist_16dp"
-        android:drawablePadding="4dp"
-        android:text="Built-in (3.254 words)"
-        android:textColor="#a0a0a0"
-        android:textSize="12sp"
-        android:visibility="gone" />
-
-    <TextView
         android:id="@+id/job_item_speed"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/cracking_speed"
-        android:textAllCaps="false"
         android:textSize="12sp" />
 
     <TextView
@@ -96,43 +118,6 @@
         android:layout_weight="1"
         android:drawablePadding="4dp"
         android:text="@string/estimated_time"
-        android:textAllCaps="false"
         android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/job_item_pmkid"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:drawableStart="@drawable/ic_lock_16dp"
-        android:drawablePadding="4dp"
-        android:text="1f02aa3d48e4fef4c2b5f1a1aad06176"
-        android:textColor="#a0a0a0"
-        android:textSize="12sp"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/job_item_mac_client"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:drawableStart="@drawable/ic_phone_android_16dp"
-        android:drawablePadding="4dp"
-        android:text="a0:b1:c2:d3:e4:f5:67"
-        android:textColor="#a0a0a0"
-        android:textSize="12sp"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/job_item_mac_ap"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:drawableStart="@drawable/ic_router_16dp"
-        android:drawablePadding="4dp"
-        android:text="01:02:03:04:05:06"
-        android:textColor="#a0a0a0"
-        android:textSize="12sp"
-        android:visibility="gone" />
 
 </LinearLayout>

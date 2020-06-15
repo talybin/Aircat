@@ -1,13 +1,18 @@
 package com.talybin.aircat;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -39,6 +44,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private TextView speed;
         private TextView estTime;
         private ProgressBar progressBar;
+        private View passwdContainer;
 
         private Job job;
 
@@ -52,6 +58,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             progressBar = (ProgressBar)itemView.findViewById(R.id.job_item_progress_bar);
             speed = (TextView)itemView.findViewById(R.id.job_item_speed);
             estTime = (TextView)itemView.findViewById(R.id.job_item_est_time);
+            passwdContainer = itemView.findViewById(R.id.job_item_passwd_container);
+
+            ImageView copyPasswd = (ImageView)itemView.findViewById(R.id.job_item_copy_passwd);
+            copyPasswd.setOnClickListener(v -> doCopyPassword());
 
             job = null;
             itemView.addOnAttachStateChangeListener(this);
@@ -75,6 +85,18 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         public Job getJob() {
             return job;
+        }
+
+        private void doCopyPassword() {
+            Context ctx = itemView.getContext();
+            ClipboardManager clipboard =
+                    (ClipboardManager)ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(
+                        ClipData.newPlainText(ctx.getString(R.string.password), job.getPassword()));
+            }
+            else
+                Toast.makeText(ctx, R.string.operation_failed, Toast.LENGTH_LONG).show();
         }
 
         @Override
@@ -106,7 +128,12 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     DateUtils.formatElapsedTime(estimated) : context.getString(android.R.string.unknownName)));
 
             String pw = job.getPassword();
-            password.setText(pw != null ? pw : "");
+            if (pw != null) {
+                password.setText(pw);
+                passwdContainer.setVisibility(View.VISIBLE);
+            }
+            else
+                passwdContainer.setVisibility(View.GONE);
         }
 
         @Override
