@@ -83,6 +83,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.job_detail_menu, menu);
+        menu.findItem(R.id.action_select_all).setVisible(false);
     }
 
     @Override

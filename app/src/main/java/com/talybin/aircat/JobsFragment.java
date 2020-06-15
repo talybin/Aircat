@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,9 +24,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class JobsFragment extends Fragment
-        implements JobManager.Listener, JobListAdapter.Listener
+        implements JobManager.Listener, JobListAdapter.Listener, ActionMode.Callback
 {
 
+    private RecyclerView jobList;
     private RecyclerView.Adapter adapter;
     private FloatingActionButton createJobBut;
 
@@ -54,7 +56,7 @@ public class JobsFragment extends Fragment
         jobManager = JobManager.getInstance();
 
         // Job list
-        RecyclerView jobList = view.findViewById(R.id.job_list);
+        jobList = view.findViewById(R.id.job_list);
         jobList.setLayoutManager(new LinearLayoutManager(ctx));
         jobList.setHasFixedSize(true);
 
@@ -121,52 +123,67 @@ public class JobsFragment extends Fragment
             selectedItems.add(holder);
             holder.select(true);
             // Enter action mode on first one
-            if (selectedItems.size() == 1) {
+            if (selectedItems.size() == 1 && actionMode == null) {
                 AppCompatActivity activity = (AppCompatActivity)requireActivity();
-                actionMode = activity.startSupportActionMode(new ActionMode.Callback() {
-                    @Override
-                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                        createJobBut.setVisibility(View.GONE);
-                        mode.getMenuInflater().inflate(R.menu.job_select_menu, menu);
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                        if (item.getItemId() == R.id.action_remove) {
-                            // Remove selected items. Since removal is by position, we
-                            // need to sort and remove in reverse order.
-                            selectedItems.stream()
-                                    .map(JobListAdapter.JobViewHolder::getAdapterPosition)
-                                    .sorted((i1, i2) -> i2 - i1)    // Reverse sort
-                                    .forEach(jobManager::remove);
-                            // Redraw
-                            actionMode.finish();
-                            actionMode = null;
-                            adapter.notifyDataSetChanged();
-                            return true;
-                        }
-                        return false;
-                    }
-
-                    @Override
-                    public void onDestroyActionMode(ActionMode mode) {
-                        for (JobListAdapter.JobViewHolder selHolder : selectedItems)
-                            selHolder.select(false);
-                        selectedItems.clear();
-                        createJobBut.setVisibility(View.VISIBLE);
-                    }
-                });
+                actionMode = activity.startSupportActionMode(this);
             }
         }
 
         // Set title
         if (actionMode != null && selectedItems.size() > 0)
             actionMode.setTitle("" + selectedItems.size());
+    }
+
+    @Override
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        MenuInflater inflater = mode.getMenuInflater();
+        inflater.inflate(R.menu.job_detail_menu, menu);
+        // Add Settings menu item from main_menu
+        inflater.inflate(R.menu.menu_main, menu);
+
+        menu.findItem(R.id.action_pause).setVisible(false);
+        menu.findItem(R.id.action_start).setVisible(false);
+
+        createJobBut.setVisibility(View.GONE);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        return false;
+    }
+
+    @Override
+    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_remove:
+                // Remove selected items. Since removal is by position, we
+                // need to sort and remove in reverse order.
+                selectedItems.stream()
+                        .map(JobListAdapter.JobViewHolder::getAdapterPosition)
+                        .sorted((i1, i2) -> i2 - i1)    // Reverse sort
+                        .forEach(jobManager::remove);
+                // Redraw
+                actionMode.finish();
+                actionMode = null;
+                adapter.notifyDataSetChanged();
+                return true;
+            case R.id.action_select_all:
+                selectedItems.clear();
+                for (int i = 0; i < jobManager.getJobs().size(); ++i) {
+                    toggleSelection((JobListAdapter.JobViewHolder)
+                        jobList.findViewHolderForAdapterPosition(i));
+                }
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void onDestroyActionMode(ActionMode mode) {
+        for (JobListAdapter.JobViewHolder selHolder : selectedItems)
+            selHolder.select(false);
+        selectedItems.clear();
+        createJobBut.setVisibility(View.VISIBLE);
     }
 }

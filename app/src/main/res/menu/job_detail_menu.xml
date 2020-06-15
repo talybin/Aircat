@@ -3,6 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_select_all"
+        android:icon="?attr/actionModeSelectAllDrawable"
+        android:title="@string/select_all"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_start"
         android:icon="@android:drawable/ic_media_play"
         android:title="@string/start"
