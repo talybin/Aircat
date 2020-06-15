@@ -82,7 +82,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         // Click listeners
         jobItem.setOnClickListener(v -> showBottomMenu());
 
-        int[] jobActions = {
+        final int[] jobActions = {
                 R.id.job_action_copy,
                 R.id.job_action_connect,
         };

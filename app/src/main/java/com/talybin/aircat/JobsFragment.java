@@ -114,10 +114,8 @@ public class JobsFragment extends Fragment
             selectedItems.remove(holder);
             holder.select(false);
             // Exit action mode on last one
-            if (selectedItems.size() == 0) {
+            if (selectedItems.size() == 0)
                 actionMode.finish();
-                actionMode = null;
-            }
         }
         else { // Add selected item
             selectedItems.add(holder);
@@ -166,7 +164,6 @@ public class JobsFragment extends Fragment
                         .forEach(jobManager::remove);
                 // Redraw
                 actionMode.finish();
-                actionMode = null;
                 adapter.notifyDataSetChanged();
                 return true;
 
@@ -187,5 +184,6 @@ public class JobsFragment extends Fragment
             selHolder.select(false);
         selectedItems.clear();
         createJobBut.setVisibility(View.VISIBLE);
+        actionMode = null;
     }
 }
