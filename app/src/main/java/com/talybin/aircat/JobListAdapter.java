@@ -44,7 +44,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private TextView speed;
         private TextView estTime;
         private ProgressBar progressBar;
-        private View passwdContainer;
+        private View optionsBut;
 
         private Job job;
 
@@ -58,10 +58,13 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             progressBar = (ProgressBar)itemView.findViewById(R.id.job_item_progress_bar);
             speed = (TextView)itemView.findViewById(R.id.job_item_speed);
             estTime = (TextView)itemView.findViewById(R.id.job_item_est_time);
-            passwdContainer = itemView.findViewById(R.id.job_item_passwd_container);
 
+            optionsBut = itemView.findViewById(R.id.job_item_options);
+
+            /*
             ImageView copyPasswd = (ImageView)itemView.findViewById(R.id.job_item_copy_passwd);
             copyPasswd.setOnClickListener(v -> doCopyPassword());
+             */
 
             job = null;
             itemView.addOnAttachStateChangeListener(this);
@@ -131,10 +134,13 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             String pw = job.getPassword();
             if (pw != null) {
                 password.setText(pw);
-                passwdContainer.setVisibility(View.VISIBLE);
+                password.setVisibility(View.VISIBLE);
+                optionsBut.setVisibility(View.VISIBLE);
             }
-            else
-                passwdContainer.setVisibility(View.GONE);
+            else {
+                password.setVisibility(View.GONE);
+                optionsBut.setVisibility(View.GONE);
+            }
         }
 
         @Override
