@@ -32,28 +32,12 @@
             android:textColor="?android:attr/textColorLink"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/job_item_options"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:paddingLeft="20dp"
-            android:text="&#8942;"
-            android:textAppearance="?android:textAppearanceLarge" />
-
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:id="@+id/job_item_run_group"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
         <ProgressBar
             android:id="@+id/job_item_progress_bar"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@id/job_item_password"
             android:max="100" />
 
         <TextView
@@ -92,6 +76,7 @@
             android:drawablePadding="4dp"
             android:text="@string/estimated_time"
             android:textSize="12sp" />
+
     </RelativeLayout>
 
 </LinearLayout>

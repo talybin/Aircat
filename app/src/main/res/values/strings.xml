@@ -31,5 +31,6 @@
     <string name="failed_to_start_job">Failed to start the job</string>
     <string name="select_all">Select all</string>
     <string name="operation_failed">Operation failed</string>
+    <string name="not_implemented_yet">Not implemented yet</string>
     <string name="password_clipped">Password stored in clip buffer</string>
 </resources>

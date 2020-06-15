@@ -1,19 +1,13 @@
 package com.talybin.aircat;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -45,30 +39,19 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private TextView speed;
         private TextView estTime;
         private ProgressBar progressBar;
-        private View optionsBut;
-        private View runGroup;
 
         private Job job;
 
         JobViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            ssid = (TextView)itemView.findViewById(R.id.job_item_ssid);
-            password = (TextView)itemView.findViewById(R.id.job_item_password);
-            state = (TextView)itemView.findViewById(R.id.job_item_status);
-            complete = (TextView)itemView.findViewById(R.id.job_item_complete);
-            progressBar = (ProgressBar)itemView.findViewById(R.id.job_item_progress_bar);
-            speed = (TextView)itemView.findViewById(R.id.job_item_speed);
-            estTime = (TextView)itemView.findViewById(R.id.job_item_est_time);
-
-            optionsBut = itemView.findViewById(R.id.job_item_options);
-            runGroup = itemView.findViewById(R.id.job_item_run_group);
-
-            /*
-            ImageView copyPasswd = (ImageView)itemView.findViewById(R.id.job_item_copy_passwd);
-            copyPasswd.setOnClickListener(v -> doCopyPassword());
-             */
-            optionsBut.setOnClickListener(v -> onOptionsMenu());
+            ssid = itemView.findViewById(R.id.job_item_ssid);
+            password = itemView.findViewById(R.id.job_item_password);
+            state = itemView.findViewById(R.id.job_item_status);
+            complete = itemView.findViewById(R.id.job_item_complete);
+            progressBar = itemView.findViewById(R.id.job_item_progress_bar);
+            speed = itemView.findViewById(R.id.job_item_speed);
+            estTime = itemView.findViewById(R.id.job_item_est_time);
 
             job = null;
             itemView.addOnAttachStateChangeListener(this);
@@ -92,34 +75,6 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         public Job getJob() {
             return job;
-        }
-
-        private void onOptionsMenu() {
-            Context ctx = itemView.getContext();
-            PopupMenu popup = new PopupMenu(ctx, optionsBut);
-            popup.inflate(R.menu.job_item_menu);
-            popup.setOnMenuItemClickListener(menuItem -> {
-                switch (menuItem.getItemId()) {
-                    case R.id.job_menu_copy_passwd:
-                        doCopyPassword();
-                        return true;
-                }
-                return false;
-            });
-            popup.show();
-        }
-
-        private void doCopyPassword() {
-            Context ctx = itemView.getContext();
-            ClipboardManager clipboard =
-                    (ClipboardManager)ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboard != null) {
-                clipboard.setPrimaryClip(
-                        ClipData.newPlainText(ctx.getString(R.string.password), job.getPassword()));
-                Toast.makeText(ctx, R.string.password_clipped, Toast.LENGTH_SHORT).show();
-            }
-            else
-                Toast.makeText(ctx, R.string.operation_failed, Toast.LENGTH_LONG).show();
         }
 
         @Override
@@ -154,12 +109,9 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (pw != null) {
                 password.setText(pw);
                 password.setVisibility(View.VISIBLE);
-                optionsBut.setVisibility(View.VISIBLE);
             }
-            else {
+            else
                 password.setVisibility(View.GONE);
-                optionsBut.setVisibility(View.GONE);
-            }
         }
 
         @Override

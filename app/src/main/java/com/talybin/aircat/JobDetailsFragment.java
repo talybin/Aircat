@@ -1,5 +1,7 @@
 package com.talybin.aircat;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
 
@@ -18,10 +20,14 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+
+import java.util.Objects;
+
 
 public class JobDetailsFragment extends Fragment implements Job.Listener {
 
-    private Context context;
+    private BottomSheetDialog bottomDialog;
 
     private JobManager jobManager = null;
     private Job job = null;
@@ -34,7 +40,8 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+                             Bundle savedInstanceState)
+    {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_job_details, container, false);
     }
@@ -42,7 +49,6 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        context = requireContext();
         jobManager = JobManager.getInstance();
 
         // Retrieve the job
@@ -55,11 +61,13 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
             return;
         }
 
-        // Set fragment title
-        //Objects.requireNonNull(((MainActivity) context).getSupportActionBar()).setTitle(job.getSSID());
-
-        JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(view);
+        View jobItem = view.findViewById(R.id.job_details_item);
+        JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(jobItem);
         viewHolder.bindData(job);
+
+        // Alternatives for recovered password
+        bottomDialog = new BottomSheetDialog(requireContext());
+        bottomDialog.setContentView(R.layout.job_item_bottom_sheet);
 
         // Fill fields
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
@@ -69,7 +77,19 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
 
         // Start button
         Button startButton = (Button)view.findViewById(R.id.job_details_but_start);
-        startButton.setOnClickListener(v -> { startJob(); });
+        startButton.setOnClickListener(v -> startJob());
+
+        // Click listeners
+        jobItem.setOnClickListener(v -> showBottomMenu());
+
+        int[] jobActions = {
+                R.id.job_action_copy,
+                R.id.job_action_connect,
+        };
+        for (int id : jobActions) {
+            View v = Objects.requireNonNull(bottomDialog.findViewById(id));
+            v.setOnClickListener(this::onBottomMenuSelected);
+        }
 
         job.addListener(this);
     }
@@ -78,7 +98,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     public void onDestroyView() {
         job.removeListener(this);
         job = null;
-        context = null;
+        bottomDialog = null;
 
         super.onDestroyView();
     }
@@ -120,6 +140,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     }
 
     private void startJob() {
+        Context context = getContext();
         if (!job.start(context))
             Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
     }
@@ -138,7 +159,39 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     }
 
     @Override
-    public void onHashCatProgressChange(Job job, HashCat.Progress progress) {
+    public void onHashCatProgressChange(Job job, HashCat.Progress progress) {}
 
+    private void showBottomMenu() {
+        // This menu is for actions on retrieved password
+        if (job.getPassword() == null)
+            return;
+
+        bottomDialog.show();
+    }
+
+    private void onBottomMenuSelected(View view) {
+        bottomDialog.dismiss();
+
+        switch (view.getId()) {
+            case R.id.job_action_copy:
+                copyPassword();
+                break;
+            default:
+                Toast.makeText(getContext(), R.string.not_implemented_yet, Toast.LENGTH_SHORT).show();
+                break;
+        }
+    }
+
+    private void copyPassword() {
+        Context ctx = requireContext();
+        ClipboardManager clipboard =
+                (ClipboardManager)ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(
+                    ClipData.newPlainText(ctx.getString(R.string.password), job.getPassword()));
+            Toast.makeText(ctx, R.string.password_clipped, Toast.LENGTH_SHORT).show();
+        }
+        else
+            Toast.makeText(ctx, R.string.operation_failed, Toast.LENGTH_LONG).show();
     }
 }
