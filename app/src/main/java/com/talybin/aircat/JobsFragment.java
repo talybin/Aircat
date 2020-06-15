@@ -156,6 +156,7 @@ public class JobsFragment extends Fragment
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
         switch (item.getItemId()) {
+
             case R.id.action_remove:
                 // Remove selected items. Since removal is by position, we
                 // need to sort and remove in reverse order.
@@ -168,6 +169,7 @@ public class JobsFragment extends Fragment
                 actionMode = null;
                 adapter.notifyDataSetChanged();
                 return true;
+
             case R.id.action_select_all:
                 selectedItems.clear();
                 for (int i = 0; i < jobManager.getJobs().size(); ++i) {

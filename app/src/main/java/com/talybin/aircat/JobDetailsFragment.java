@@ -77,6 +77,9 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     @Override
     public void onDestroyView() {
         job.removeListener(this);
+        job = null;
+        context = null;
+
         super.onDestroyView();
     }
 

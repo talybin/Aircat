@@ -256,17 +256,13 @@ public class HashCat extends Thread implements Handler.Callback {
             if (!process.waitFor(1000, TimeUnit.MILLISECONDS))
                 throw new Exception("Timeout waiting hashcat to finish");
 
-            if (process.exitValue() != 0) {
-                if (errStream.ready()) {
-                    StringBuilder sb = new StringBuilder();
-                    char[] buffer = new char[1024];
-                    int length;
-                    while ((length = errStream.read(buffer)) != -1)
-                        sb.append(buffer, 0, length);
-                    throw new Exception(sb.toString());
-                }
-                else
-                    throw new Exception("Unknown error: " + process.exitValue());
+            if (errStream.ready()) {
+                StringBuilder sb = new StringBuilder();
+                char[] buffer = new char[1024];
+                int length;
+                while ((length = errStream.read(buffer)) != -1)
+                    sb.append(buffer, 0, length);
+                throw new Exception(sb.toString());
             }
 
             notifyHandler(MSG_SET_STATE, Job.State.NOT_RUNNING);

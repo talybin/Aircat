@@ -1,10 +1,7 @@
 package com.talybin.aircat;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
-
-import androidx.annotation.NonNull;
 
 import java.nio.file.Paths;
 
@@ -102,8 +99,10 @@ public class Job extends ListenerBase<Job.Listener> {
             for (Listener listener : listeners)
                 listener.onJobStateChange(this);
 
-            if (state == State.NOT_RUNNING)
+            if (state == State.NOT_RUNNING) {
                 setProgress(null);
+                hashCat = null;
+            }
         }
     }
 
@@ -132,12 +131,18 @@ public class Job extends ListenerBase<Job.Listener> {
         if (state != State.NOT_RUNNING)
             return false;
 
-        if (hashCat != null)
-            hashCat.abort();
+        stop();
 
         hashCat = new HashCat(context, this, listener);
         hashCat.start();
 
         return true;
+    }
+
+    // Stop hashcat job if running
+    public void stop() {
+        if (hashCat != null)
+            hashCat.abort();
+        // hashCat will be set to null on NOT_RUNNING state
     }
 }

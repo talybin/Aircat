@@ -58,37 +58,11 @@ public class JobManager {
     }
 
     public void remove(int pos) {
-        jobs.remove(pos);
+        jobs.remove(pos).stop();
     }
 
     public void remove(Job job) {
+        job.stop();
         jobs.remove(job);
     }
-
-    /*
-    // Get job by its hash.
-    // Return null if not found.
-    public Job get(String hash) {
-        // O(n) complexity since View list has random access to this job list
-        for (Job job : jobs) {
-            if (job.getHash().equals(hash))
-                return job;
-        }
-        return null;
-    }
-     */
-/*
-    public boolean start(Job job) {
-        if (job.getState() != Job.State.NOT_RUNNING)
-            return false;
-
-        job.setProgress(null);
-
-        HashCat handler = new HashCat(job);
-        for (Listener listener : listeners)
-            listener.onStart(handler, job);
-
-        handler.start();
-        return true;
-    }*/
 }
