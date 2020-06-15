@@ -94,6 +94,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (clipboard != null) {
                 clipboard.setPrimaryClip(
                         ClipData.newPlainText(ctx.getString(R.string.password), job.getPassword()));
+                Toast.makeText(ctx, R.string.password_clipped, Toast.LENGTH_SHORT).show();
             }
             else
                 Toast.makeText(ctx, R.string.operation_failed, Toast.LENGTH_LONG).show();

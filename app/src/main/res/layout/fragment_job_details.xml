@@ -42,7 +42,7 @@
                     android:layout_height="wrap_content"
                     android:text="Wordlist"
                     android:textAllCaps="true"
-                    android:textColor="#a0a0a0"
+                    android:textColor="@color/colorSubTitle"
                     android:textSize="10sp" />
 
                 <TextView
@@ -85,7 +85,7 @@
                         android:layout_height="wrap_content"
                         android:text="Access point MAC address"
                         android:textAllCaps="true"
-                        android:textColor="#a0a0a0"
+                        android:textColor="@color/colorSubTitle"
                         android:textSize="10sp" />
 
                     <TextView
@@ -121,7 +121,7 @@
                         android:layout_height="wrap_content"
                         android:text="Client MAC address"
                         android:textAllCaps="true"
-                        android:textColor="#a0a0a0"
+                        android:textColor="@color/colorSubTitle"
                         android:textSize="10sp" />
 
                     <TextView
@@ -157,7 +157,7 @@
                         android:layout_height="wrap_content"
                         android:text="PMKID"
                         android:textAllCaps="true"
-                        android:textColor="#a0a0a0"
+                        android:textColor="@color/colorSubTitle"
                         android:textSize="10sp" />
 
                     <TextView

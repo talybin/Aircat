@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/password"
                 android:textAllCaps="true"
-                android:textColor="#a0a0a0"
+                android:textColor="@color/colorSubTitle"
                 android:textSize="10sp" />
 
             <TextView

@@ -7,7 +7,7 @@
     <string name="create_job_fragment_label">Select Access Point</string>
     <string name="next">Next</string>
     <string name="enabling_wifi">Enabling WiFi</string>
-    <string name="scanning">Scanning...</string>
+    <string name="scanning">Scanning…</string>
     <string name="no_jobs_yet">No jobs yet</string>
     <string name="hidden">&lt;hidden&gt;</string>
     <string name="getting_pmkid">Fetching PMKID. Please wait…</string>
@@ -30,4 +30,5 @@
     <string name="failed_to_start_job">Failed to start the job</string>
     <string name="select_all">Select all</string>
     <string name="operation_failed">Operation failed</string>
+    <string name="password_clipped">Password stored in clip buffer</string>
 </resources>
