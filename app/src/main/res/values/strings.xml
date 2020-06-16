@@ -34,4 +34,8 @@
     <string name="operation_failed">Operation failed</string>
     <string name="not_implemented_yet">Not implemented yet</string>
     <string name="password_clipped">Password stored in clip buffer</string>
+    <string name="hash_clipped">Hash in hashcat format stored in clip buffer</string>
+    <string name="wordlist">Wordlist</string>
+    <string name="ap_mac">Access point MAC address</string>
+    <string name="client_mac">Client MAC address</string>
 </resources>

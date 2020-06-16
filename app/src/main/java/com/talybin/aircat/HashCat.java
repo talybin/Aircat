@@ -118,14 +118,11 @@ public class HashCat extends Thread implements Handler.Callback {
 
     // Clean up
     private void close() {
-        if (hashFile != null) {
-            hashFile.delete();
-            hashFile = null;
-        }
+        hashFile = null;
     }
 
     // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
-    private static String makeHash(Job job) {
+    public static String makeHash(Job job) {
         return String.format("%s*%s*%s*%s",
                 job.getHash(),
                 job.getApMac().replace(":", ""),
@@ -138,6 +135,7 @@ public class HashCat extends Thread implements Handler.Callback {
         BufferedWriter bufferedWriter = null;
         try {
             hashFile = File.createTempFile("hashcat-", ".hash");
+            hashFile.deleteOnExit();
             // Store hash
             bufferedWriter = new BufferedWriter(new FileWriter(hashFile));
             bufferedWriter.write(makeHash(job));

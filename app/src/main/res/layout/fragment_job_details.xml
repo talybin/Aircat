@@ -24,8 +24,12 @@
                 android:layout_height="wrap_content" />
 
             <LinearLayout
+                android:id="@+id/job_details_wordlist_info"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 android:orientation="horizontal"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="10dp">
@@ -44,7 +48,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Wordlist"
+                        android:text="@string/wordlist"
                         android:textAllCaps="true"
                         android:textColor="@color/colorSubTitle"
                         android:textSize="10sp" />
@@ -53,7 +57,7 @@
                         android:id="@+id/job_details_wordlist"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="rockyou.txt"
+                        android:text="sample.txt"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -61,8 +65,12 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/job_details_hash_info"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 android:orientation="vertical"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="5dp">
@@ -87,7 +95,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Access point MAC address"
+                            android:text="@string/ap_mac"
                             android:textAllCaps="true"
                             android:textColor="@color/colorSubTitle"
                             android:textSize="10sp" />
@@ -123,7 +131,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Client MAC address"
+                            android:text="@string/client_mac"
                             android:textAllCaps="true"
                             android:textColor="@color/colorSubTitle"
                             android:textSize="10sp" />
@@ -176,14 +184,6 @@
                 </LinearLayout>
 
             </LinearLayout>
-
-            <Button
-                android:id="@+id/job_details_but_start"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:text="Start"
-                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>

@@ -75,12 +75,10 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getHash());
         ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordListName());
 
-        // Start button
-        Button startButton = (Button)view.findViewById(R.id.job_details_but_start);
-        startButton.setOnClickListener(v -> startJob());
-
         // Click listeners
         jobItem.setOnClickListener(v -> showBottomMenu());
+        view.findViewById(R.id.job_details_hash_info).setOnClickListener(this::onViewClick);
+        view.findViewById(R.id.job_details_wordlist_info).setOnClickListener(this::onViewClick);
 
         final int[] jobActions = {
                 R.id.job_action_copy,
@@ -88,7 +86,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         };
         for (int id : jobActions) {
             View v = Objects.requireNonNull(bottomDialog.findViewById(id));
-            v.setOnClickListener(this::onBottomMenuSelected);
+            v.setOnClickListener(this::onViewClick);
         }
 
         job.addListener(this);
@@ -169,12 +167,18 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         bottomDialog.show();
     }
 
-    private void onBottomMenuSelected(View view) {
+    private void onViewClick(View view) {
         bottomDialog.dismiss();
+        Context ctx = requireContext();
 
         switch (view.getId()) {
             case R.id.job_action_copy:
-                copyPassword();
+                if (copyToClipboard(ctx.getString(R.string.password), job.getPassword()))
+                    Toast.makeText(ctx, R.string.password_clipped, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.job_details_hash_info:
+                if (copyToClipboard("hashcat", HashCat.makeHash(job)))
+                    Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
                 break;
             default:
                 Toast.makeText(getContext(), R.string.not_implemented_yet, Toast.LENGTH_SHORT).show();
@@ -182,16 +186,16 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         }
     }
 
-    private void copyPassword() {
+    private boolean copyToClipboard(String name, String data) {
         Context ctx = requireContext();
         ClipboardManager clipboard =
                 (ClipboardManager)ctx.getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null) {
-            clipboard.setPrimaryClip(
-                    ClipData.newPlainText(ctx.getString(R.string.password), job.getPassword()));
-            Toast.makeText(ctx, R.string.password_clipped, Toast.LENGTH_SHORT).show();
+            clipboard.setPrimaryClip(ClipData.newPlainText(name, data));
+            return true;
         }
         else
             Toast.makeText(ctx, R.string.operation_failed, Toast.LENGTH_LONG).show();
+        return false;
     }
 }
