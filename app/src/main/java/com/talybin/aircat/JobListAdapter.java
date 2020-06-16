@@ -1,7 +1,6 @@
 package com.talybin.aircat;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +11,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface Listener {
@@ -21,6 +23,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private JobManager jobManager;
     private Listener listener;
+
+    private Set<Integer> selectedItems = new HashSet<>();
 
     static class EmptyViewHolder extends RecyclerView.ViewHolder {
 
@@ -69,14 +73,6 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             onHashCatProgressChange(job, job.getProgress());
         }
 
-        public void select(boolean en) {
-            itemView.setBackgroundColor(en ? Color.LTGRAY : Color.TRANSPARENT);
-        }
-
-        public Job getJob() {
-            return job;
-        }
-
         @Override
         public void onJobStateChange(Job job) {
             state.setText(job.getStateAsStr(itemView.getContext()));
@@ -115,7 +111,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         @Override
-        public void onViewAttachedToWindow(View v) { }
+        public void onViewAttachedToWindow(View v) {}
 
         @Override
         public void onViewDetachedFromWindow(View v) {
@@ -149,12 +145,17 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof JobViewHolder)
-            ((JobViewHolder)holder).bindData(jobManager.getJobs().get(position));
+        if (holder.getItemViewType() == R.layout.job_list_item) {
+            JobViewHolder jobHolder = (JobViewHolder)holder;
+            jobHolder.bindData(jobManager.getJobs().get(position));
+            // What magic is this?
+            jobHolder.itemView.setSelected(selectedItems.contains(position));
+        }
     }
 
     @Override
     public int getItemCount() {
+        // If no jobs present use empty view
         return Math.max(1, jobManager.getJobs().size());
     }
 
@@ -162,5 +163,32 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public int getItemViewType(int pos) {
         return jobManager.getJobs().size() > 0 ?
                 R.layout.job_list_item : R.layout.job_list_empty;
+    }
+
+    public void toggleSelection(int pos) {
+        if (selectedItems.contains(pos))
+            selectedItems.remove(pos);
+        else
+            selectedItems.add(pos);
+        notifyItemChanged(pos);
+    }
+
+    public void selectRange(int startPos, int count) {
+        for (; count-- > 0; ++startPos)
+            selectedItems.add(startPos);
+        notifyDataSetChanged();
+    }
+
+    public void clearSelections() {
+        selectedItems.clear();
+        notifyDataSetChanged();
+    }
+
+    public int getSelectedItemCount() {
+        return selectedItems.size();
+    }
+
+    public Set<Integer> getSelectedItems() {
+        return selectedItems;
     }
 }
