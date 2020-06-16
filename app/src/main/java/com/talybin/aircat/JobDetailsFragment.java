@@ -3,6 +3,8 @@ package com.talybin.aircat;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -16,7 +18,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,8 +25,12 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.util.Objects;
 
+import static android.app.Activity.RESULT_OK;
+
 
 public class JobDetailsFragment extends Fragment implements Job.Listener {
+
+    private static final int FILE_SELECT_CODE = 0;
 
     private BottomSheetDialog bottomDialog;
 
@@ -176,6 +181,11 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
                 if (copyToClipboard(ctx.getString(R.string.password), job.getPassword()))
                     Toast.makeText(ctx, R.string.password_clipped, Toast.LENGTH_SHORT).show();
                 break;
+
+            case R.id.job_details_wordlist_info:
+                browseForWordlist();
+                break;
+
             case R.id.job_details_hash_info:
                 if (copyToClipboard("hashcat", HashCat.makeHash(job)))
                     Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
@@ -197,5 +207,35 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         else
             Toast.makeText(ctx, R.string.operation_failed, Toast.LENGTH_LONG).show();
         return false;
+    }
+
+    private void browseForWordlist() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+
+        try {
+            startActivityForResult(Intent.createChooser(
+                    intent, getString(R.string.choose_wordlist)), FILE_SELECT_CODE);
+        }
+        catch (Exception e) {
+            Toast.makeText(getContext(),
+                    getString(R.string.error_msg, e.getMessage()), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode != FILE_SELECT_CODE)
+            return;
+
+        if (resultCode != RESULT_OK)
+            return;
+
+        Uri uri = data.getData();
+        Log.d("onActivityResult", "---> File Uri: " + uri.toString());
     }
 }

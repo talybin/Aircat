@@ -19,6 +19,7 @@
     <string name="complete_percent">Complete: %1$.1f%%</string>
     <string name="cracking_speed">Cracking speed: %1$,d H/s</string>
     <string name="estimated_time">Estimated time: %1$s</string>
+    <string name="error_msg">Error: %1$s</string>
     <string name="start">Start</string>
     <string name="pause">Pause</string>
     <string name="remove">Remove</string>
@@ -38,4 +39,5 @@
     <string name="wordlist">Wordlist</string>
     <string name="ap_mac">Access point MAC address</string>
     <string name="client_mac">Client MAC address</string>
+    <string name="choose_wordlist">Choose a wordlist</string>
 </resources>
