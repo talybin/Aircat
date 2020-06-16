@@ -237,5 +237,8 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
 
         Uri uri = data.getData();
         Log.d("onActivityResult", "---> File Uri: " + uri.toString());
+
+        // TODO hashcat cat read from stdin
+        //getContext().getContentResolver().openInputStream(uri)
     }
 }
