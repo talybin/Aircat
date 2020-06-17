@@ -83,7 +83,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             Context context = itemView.getContext();
 
             float percentComplete = 0;
-            //long estimated = 0;
+            long estimated = -1;
 
             if (progress != null) {
                 speed.setText(context.getString(R.string.cracking_speed, progress.speed));
@@ -91,6 +91,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     percentComplete = progress.nr_complete * 100.f / progress.total;
                     //if (progress.speed > 0)
                         //estimated = (progress.total - progress.nr_complete) / progress.speed;
+                    estimated = progress.remainSecs;
                 }
             }
             else {
@@ -99,8 +100,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             complete.setText(context.getString(R.string.complete_percent, percentComplete));
             progressBar.setProgress(Math.round(percentComplete), true);
 
-            //estTime.setText(context.getString(R.string.estimated_time, estimated > 0 ?
-                    //DateUtils.formatElapsedTime(estimated) : context.getString(android.R.string.unknownName)));
+            estTime.setText(context.getString(R.string.estimated_time, estimated >= 0 ?
+                    DateUtils.formatElapsedTime(estimated) : context.getString(android.R.string.unknownName)));
 
             String pw = job.getPassword();
             if (pw != null) {

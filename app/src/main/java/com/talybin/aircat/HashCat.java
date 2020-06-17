@@ -3,6 +3,7 @@ package com.talybin.aircat;
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -18,8 +19,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class HashCat extends Thread implements Handler.Callback {
 
@@ -28,7 +33,7 @@ public class HashCat extends Thread implements Handler.Callback {
     private Job job = null;
     private Process process = null;
     private ContentResolver contentResolver = null;
-    private long progressReadCnt = 0;
+    private AtomicLong progressReadCnt = null;
 
     private File hashFile = null;
     private File workingDir = null;
@@ -63,11 +68,15 @@ public class HashCat extends Thread implements Handler.Callback {
         // Speed in hashes per second
         int speed = 0;
 
-        // Number of hashes completed so far
+        // Number bytes processed so far
         long nr_complete = 0;
 
-        // Total number of hashes
+        // Total number of bytes in initial input stream
         long total = 0;
+
+        // Estimated remained seconds to finish
+        // -1 reserved for unknown
+        long remainSecs = -1;
 
         // For debug purpose
         @NonNull
@@ -193,11 +202,11 @@ public class HashCat extends Thread implements Handler.Callback {
             public void run() {
                 byte[] buffer = new byte[4096];
                 int cnt;
-                progressReadCnt = 0;
+                progressReadCnt = new AtomicLong(0);
                 try {
                     while ((cnt = is.read(buffer)) > 0) {
                         os.write(buffer, 0, cnt);
-                        progressReadCnt += cnt;
+                        progressReadCnt.addAndGet(cnt);
                     }
                 }
                 catch (IOException e) {
@@ -256,6 +265,10 @@ public class HashCat extends Thread implements Handler.Callback {
             pipeStream(contentResolver.openInputStream(
                     job.getWordList()), process.getOutputStream()).start();
 
+            Instant lastTimeStamp = null;
+            long timeBetweenReads = 0;
+            long lastBytesElapsed = 0;
+
             while (scanner.hasNext()) {
                 //String line = scanner.nextLine();
                 //Log.d("HashCat", "---> line [" + line + "]");
@@ -272,16 +285,51 @@ public class HashCat extends Thread implements Handler.Callback {
                     case "STATUS":
                         progress.state = scanner.nextInt();
                         break;
+
                     case "SPEED":
                         progress.speed = scanner.nextInt();
 
-                        boolean isFirst = progress.total == 0;
-                        progress.nr_complete = progressReadCnt;
+                        long prevCount = progress.nr_complete;
+                        progress.nr_complete = progressReadCnt.get();
                         progress.total = Math.max(progress.nr_complete, fileSize);
-                        if (isFirst)
+
+                        // Unknown remaining time
+                        //progress.remainSecs = -1;
+
+                        Instant now = Instant.now();
+                        if (lastTimeStamp == null)
+                            // Swithing from start to running
                             notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
+                        else {
+                            // Calculate remaining speed
+                            long timeElapsed = Duration.between(lastTimeStamp, now).toMillis();
+                            long bytesElapsed = progress.nr_complete - prevCount;
+                            double speed = 0;
+
+                            if (bytesElapsed == 0) {
+                                timeBetweenReads += timeElapsed;
+                                speed = (double)lastBytesElapsed / (timeBetweenReads / 1000.0);
+                            }
+                            else {
+                                timeBetweenReads = 0;
+                                lastBytesElapsed = bytesElapsed;
+                                speed = (double)bytesElapsed / (timeElapsed / 1000.0);
+                            }
+
+                            if (speed > 0) {
+                                long bytesRemain = progress.total - progress.nr_complete;
+                                // Speed in bytes per second
+                                //double speed = (double)bytesElapsed / (timeElapsed / 1000.0);
+                                Log.d("hashcat", "---> elapsed: " + timeElapsed + " (" + bytesElapsed + "), speed: " + speed + " bytes/sec");
+                                progress.remainSecs =
+                                        Double.valueOf(Math.floor((double)bytesRemain / speed)).longValue();
+                            }
+                        }
+                        lastTimeStamp = now;
+
                         notifyHandler(MSG_SET_PROGRESS, progress);
                         break;
+
                         /*
                     case "PROGRESS":
                         progress.nr_complete = scanner.nextLong();
