@@ -3,7 +3,6 @@ package com.talybin.aircat;
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -19,12 +18,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Date;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class HashCat extends Thread implements Handler.Callback {
 
@@ -33,7 +32,6 @@ public class HashCat extends Thread implements Handler.Callback {
     private Job job = null;
     private Process process = null;
     private ContentResolver contentResolver = null;
-    private AtomicLong progressReadCnt = null;
 
     private File hashFile = null;
     private File workingDir = null;
@@ -73,10 +71,6 @@ public class HashCat extends Thread implements Handler.Callback {
 
         // Total number of bytes in initial input stream
         long total = 0;
-
-        // Estimated remained seconds to finish
-        // -1 reserved for unknown
-        long remainSecs = -1;
 
         // For debug purpose
         @NonNull
@@ -202,11 +196,9 @@ public class HashCat extends Thread implements Handler.Callback {
             public void run() {
                 byte[] buffer = new byte[4096];
                 int cnt;
-                progressReadCnt = new AtomicLong(0);
                 try {
                     while ((cnt = is.read(buffer)) > 0) {
                         os.write(buffer, 0, cnt);
-                        progressReadCnt.addAndGet(cnt);
                     }
                 }
                 catch (IOException e) {
@@ -217,8 +209,20 @@ public class HashCat extends Thread implements Handler.Callback {
                     try { is.close(); } catch (IOException ignored) {}
                     try { os.close(); } catch (IOException ignored) {}
                 }
-                Log.d("pipeStream", "---> done, size: " + progressReadCnt);
             }
+        };
+    }
+
+    private Callable<Long> countRows(InputStream is) {
+        return () -> {
+            byte[] buffer = new byte[4096];
+            long rows = 0;
+
+            for (int cnt; (cnt = is.read(buffer)) > 0; ) {
+                for (int i = 0; i < cnt; ++i)
+                    if (buffer[i] == '\n') ++rows;
+            }
+            return rows;
         };
     }
 
@@ -237,6 +241,8 @@ public class HashCat extends Thread implements Handler.Callback {
 
         // Password starts with AP mac address without colons
         final String apMac = job.getApMac().replace(":", "");
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
 
         try {
             process = Runtime.getRuntime().exec(
@@ -261,12 +267,11 @@ public class HashCat extends Thread implements Handler.Callback {
             errStream = new InputStreamReader(process.getErrorStream());
             scanner = new Scanner(outStream);
 
-            long fileSize = Utils.getUriSize(contentResolver, job.getWordList());
             pipeStream(contentResolver.openInputStream(
                     job.getWordList()), process.getOutputStream()).start();
 
-            // Time first status is seen
-            Instant startTimeStamp = null;
+            Future<Long> nrRows = executor.submit(
+                    countRows(contentResolver.openInputStream(job.getWordList())));
 
             while (scanner.hasNext()) {
                 //String line = scanner.nextLine();
@@ -287,45 +292,22 @@ public class HashCat extends Thread implements Handler.Callback {
 
                     case "SPEED":
                         progress.speed = scanner.nextInt();
-
-                        long prevCount = progress.nr_complete;
-                        progress.nr_complete = progressReadCnt.get();
-                        progress.total = Math.max(progress.nr_complete, fileSize);
-
-                        Instant now = Instant.now();
-                        if (startTimeStamp == null) {
-                            startTimeStamp = now;
-                            // Switching from start to running
-                            notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
-                        }
-                        else {
-                            // Calculate remaining speed
-                            long timeElapsed = Duration.between(startTimeStamp, now).toMillis();
-                            long bytesRemain = progress.total - progress.nr_complete;
-
-                            // Speed in bytes per second
-                            double speed = progress.nr_complete / (timeElapsed / 1000.0);
-
-                            Log.d("hashcat", "---> elapsed: " + timeElapsed + " (" + progress.nr_complete + "), speed: " + speed + " bytes/sec");
-                            progress.remainSecs =
-                                    speed > 0 ? Double.valueOf(Math.floor((double)bytesRemain / speed)).longValue()
-                                            : -1;
-                        }
-
-                        notifyHandler(MSG_SET_PROGRESS, progress);
                         break;
 
-                        /*
                     case "PROGRESS":
                         progress.nr_complete = scanner.nextLong();
                         // Send status
                         if (progress.nr_complete == 0) {
-                            progress.total = scanner.nextLong();
+                            //progress.total = scanner.nextLong();
                             notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
                         }
+                        if (progress.total == 0 && nrRows.isDone()) {
+                            progress.total = nrRows.get();
+                            Log.d("hashcat", "---> nr rows: " + progress.total);
+                        }
+
                         notifyHandler(MSG_SET_PROGRESS, progress);
                         break;
-                         */
                 }
             }
 
@@ -355,6 +337,8 @@ public class HashCat extends Thread implements Handler.Callback {
                 try { errStream.close(); } catch (IOException ignored) {}
             if (scanner != null)
                 scanner.close();
+
+            executor.shutdown();
         }
     }
 
