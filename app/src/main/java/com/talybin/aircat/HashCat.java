@@ -265,9 +265,8 @@ public class HashCat extends Thread implements Handler.Callback {
             pipeStream(contentResolver.openInputStream(
                     job.getWordList()), process.getOutputStream()).start();
 
-            Instant lastTimeStamp = null;
-            long timeBetweenReads = 0;
-            long lastBytesElapsed = 0;
+            // Time first status is seen
+            Instant startTimeStamp = null;
 
             while (scanner.hasNext()) {
                 //String line = scanner.nextLine();
@@ -293,39 +292,25 @@ public class HashCat extends Thread implements Handler.Callback {
                         progress.nr_complete = progressReadCnt.get();
                         progress.total = Math.max(progress.nr_complete, fileSize);
 
-                        // Unknown remaining time
-                        //progress.remainSecs = -1;
-
                         Instant now = Instant.now();
-                        if (lastTimeStamp == null)
-                            // Swithing from start to running
+                        if (startTimeStamp == null) {
+                            startTimeStamp = now;
+                            // Switching from start to running
                             notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
+                        }
                         else {
                             // Calculate remaining speed
-                            long timeElapsed = Duration.between(lastTimeStamp, now).toMillis();
-                            long bytesElapsed = progress.nr_complete - prevCount;
-                            double speed = 0;
+                            long timeElapsed = Duration.between(startTimeStamp, now).toMillis();
+                            long bytesRemain = progress.total - progress.nr_complete;
 
-                            if (bytesElapsed == 0) {
-                                timeBetweenReads += timeElapsed;
-                                speed = (double)lastBytesElapsed / (timeBetweenReads / 1000.0);
-                            }
-                            else {
-                                timeBetweenReads = 0;
-                                lastBytesElapsed = bytesElapsed;
-                                speed = (double)bytesElapsed / (timeElapsed / 1000.0);
-                            }
+                            // Speed in bytes per second
+                            double speed = progress.nr_complete / (timeElapsed / 1000.0);
 
-                            if (speed > 0) {
-                                long bytesRemain = progress.total - progress.nr_complete;
-                                // Speed in bytes per second
-                                //double speed = (double)bytesElapsed / (timeElapsed / 1000.0);
-                                Log.d("hashcat", "---> elapsed: " + timeElapsed + " (" + bytesElapsed + "), speed: " + speed + " bytes/sec");
-                                progress.remainSecs =
-                                        Double.valueOf(Math.floor((double)bytesRemain / speed)).longValue();
-                            }
+                            Log.d("hashcat", "---> elapsed: " + timeElapsed + " (" + progress.nr_complete + "), speed: " + speed + " bytes/sec");
+                            progress.remainSecs =
+                                    speed > 0 ? Double.valueOf(Math.floor((double)bytesRemain / speed)).longValue()
+                                            : -1;
                         }
-                        lastTimeStamp = now;
 
                         notifyHandler(MSG_SET_PROGRESS, progress);
                         break;
