@@ -2,8 +2,10 @@ package com.talybin.aircat;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -11,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -23,6 +26,16 @@ import android.widget.Toast;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 
 import static android.app.Activity.RESULT_OK;
@@ -78,7 +91,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
         ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
         ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getHash());
-        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordListName());
+        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordListFileName());
 
         // Click listeners
         jobItem.setOnClickListener(v -> showBottomMenu());
@@ -210,10 +223,9 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     }
 
     private void browseForWordlist() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.setType("*/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
 
         try {
             startActivityForResult(Intent.createChooser(
@@ -231,14 +243,60 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
 
         if (requestCode != FILE_SELECT_CODE)
             return;
-
         if (resultCode != RESULT_OK)
             return;
 
         Uri uri = data.getData();
+        job.setWordList(uri);
+        ((TextView)requireView().findViewById(
+                R.id.job_details_wordlist)).setText(job.getWordListFileName());
+
+
+        ContentResolver cr = getContext().getContentResolver();
+
+        Log.d("onActivityResult", "---> 1: " + uri.toString());
+        //Log.d("onActivityResult", "---> 2: " + Utils.getUriSize(cr, job.getWordList()));
+/*
+        try {
+            Uri uri2 = Uri.parse("http://downloads.skullsecurity.org/passwords/rockyou.txt.bz2");
+            AssetFileDescriptor afd = cr.openAssetFileDescriptor(uri2, "r");
+            Log.d("onActivityResult", "---> 2: " + afd.getLength());
+            afd.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+ */
+
+        //Log.d("onActivityResult", "---> 3: " + cr.canonicalize(uri).toString());
+
+/*
         Log.d("onActivityResult", "---> File Uri: " + uri.toString());
 
         // TODO hashcat cat read from stdin
         //getContext().getContentResolver().openInputStream(uri)
+
+        Log.d("onActivityResult", "---> env: " + Environment.getDataDirectory());
+        Log.d("onActivityResult", "---> 1: " + uri.getHost());
+        Log.d("onActivityResult", "---> 2: " + uri.getLastPathSegment());
+        Log.d("onActivityResult", "---> 3: " + uri.getPath());
+        Log.d("onActivityResult", "---> 4: " + uri.getEncodedPath());
+        Log.d("onActivityResult", "---> 5: " + Uri.decode(uri.toString()));
+
+        Uri uri2 = Uri.parse(uri.toString());
+        try {
+            Uri uri2 = Uri.parse("http://downloads.skullsecurity.org/passwords/rockyou.txt.bz2");
+            InputStream is = getContext().getContentResolver().openInputStream(uri2);
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            Log.d("onActivityResult", "---> line: " + br.readLine().length());
+            //String line;
+            //while ((line = br.readLine()) != null) {
+            //    Log.d("onActivityResult", "---> line: " + line);
+            //}
+        }
+        catch (Exception e) {
+            Log.d("onActivityResult", "---> error: " + e.getMessage());
+        }
+*/
     }
 }

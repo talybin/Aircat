@@ -13,6 +13,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -99,26 +100,22 @@ public class MainActivity extends AppCompatActivity {
             return;
 
         // Install in background, should not take a long time
-        Thread thread = new Thread() {
+        new Thread() {
             @Override
             public void run() {
-                if (!Utils.unpackRawZip(getContext(), R.raw.assets, new String[] {
+                final String[] executables = {
                         "hashcat/hashcat",
                         "tcpdump/tcpdump",
-                })) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            new AlertDialog.Builder(getContext())
-                                    .setTitle(R.string.extraction_error)
-                                    .setMessage(R.string.extraction_error_msg)
-                                    .setNegativeButton(android.R.string.ok, null)
-                                    .show();
-                        }
-                    });
-                }
+                };
+                if (Utils.unpackRawZip(getContext(), R.raw.assets, executables))
+                    Log.d("MainActivity", "install complete");
+                else
+                    runOnUiThread(() -> new AlertDialog.Builder(getContext())
+                            .setTitle(R.string.extraction_error)
+                            .setMessage(R.string.extraction_error_msg)
+                            .setNegativeButton(android.R.string.ok, null)
+                            .show());
             }
-        };
-        thread.start();
+        }.start();
     }
 }

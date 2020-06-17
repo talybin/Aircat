@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
@@ -13,7 +14,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +27,8 @@ public class HashCat extends Thread implements Handler.Callback {
     private Listener listener = null;
     private Job job = null;
     private Process process = null;
+    private ContentResolver contentResolver = null;
+    private long progressReadCnt = 0;
 
     private File hashFile = null;
     private File workingDir = null;
@@ -101,6 +106,8 @@ public class HashCat extends Thread implements Handler.Callback {
         this.workingDir = Paths.get(getWorkingDir(context)).toFile();
         this.handler = new Handler(this);
 
+        this.contentResolver = context.getContentResolver();
+
         createHashFile();
     }
 
@@ -125,7 +132,7 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
-    private static String makeHash(Job job) {
+    public static String makeHash(Job job) {
         return String.format("%s*%s*%s*%s",
                 job.getHash(),
                 job.getApMac().replace(":", ""),
@@ -181,6 +188,31 @@ public class HashCat extends Thread implements Handler.Callback {
         return true;
     }
 
+    private Thread pipeStream(InputStream is, OutputStream os) {
+        return new Thread() {
+            public void run() {
+                byte[] buffer = new byte[4096];
+                int cnt;
+                progressReadCnt = 0;
+                try {
+                    while ((cnt = is.read(buffer)) > 0) {
+                        os.write(buffer, 0, cnt);
+                        progressReadCnt += cnt;
+                    }
+                }
+                catch (IOException e) {
+                    Log.d("pipeStream", "exception: " + e.getMessage());
+                    //notifyHandler(MSG_ERROR, e);
+                }
+                finally {
+                    try { is.close(); } catch (IOException ignored) {}
+                    try { os.close(); } catch (IOException ignored) {}
+                }
+                Log.d("pipeStream", "---> done, size: " + progressReadCnt);
+            }
+        };
+    }
+
     // Execute hashcat session
     @Override
     public void run() {
@@ -208,8 +240,7 @@ public class HashCat extends Thread implements Handler.Callback {
                             "--machine-readable",
                             "--logfile-disable",
                             "--potfile-disable",
-                            hashFile.getPath(),
-                            job.getWordListPath(),
+                            hashFile.getPath()
                     },
                     // No environment variables
                     null,
@@ -220,6 +251,10 @@ public class HashCat extends Thread implements Handler.Callback {
             outStream = new InputStreamReader(process.getInputStream());
             errStream = new InputStreamReader(process.getErrorStream());
             scanner = new Scanner(outStream);
+
+            long fileSize = Utils.getUriSize(contentResolver, job.getWordList());
+            pipeStream(contentResolver.openInputStream(
+                    job.getWordList()), process.getOutputStream()).start();
 
             while (scanner.hasNext()) {
                 //String line = scanner.nextLine();
@@ -239,7 +274,15 @@ public class HashCat extends Thread implements Handler.Callback {
                         break;
                     case "SPEED":
                         progress.speed = scanner.nextInt();
+
+                        boolean isFirst = progress.total == 0;
+                        progress.nr_complete = progressReadCnt;
+                        progress.total = Math.max(progress.nr_complete, fileSize);
+                        if (isFirst)
+                            notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
+                        notifyHandler(MSG_SET_PROGRESS, progress);
                         break;
+                        /*
                     case "PROGRESS":
                         progress.nr_complete = scanner.nextLong();
                         // Send status
@@ -249,6 +292,7 @@ public class HashCat extends Thread implements Handler.Callback {
                         }
                         notifyHandler(MSG_SET_PROGRESS, progress);
                         break;
+                         */
                 }
             }
 

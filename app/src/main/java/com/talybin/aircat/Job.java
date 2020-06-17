@@ -1,9 +1,10 @@
 package com.talybin.aircat;
 
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 
-import java.nio.file.Paths;
+import java.io.File;
 
 public class Job extends ListenerBase<Job.Listener> {
 
@@ -26,7 +27,7 @@ public class Job extends ListenerBase<Job.Listener> {
     private String password = null;
 
     private State state = State.NOT_RUNNING;
-    private String wordListPath = null;
+    private Uri wordList = null;
 
     private HashCat hashCat = null;
 
@@ -44,7 +45,8 @@ public class Job extends ListenerBase<Job.Listener> {
         super();
         apMac = "c4:72:95:64:51:26";
         clientMac = "6c:c7:ec:95:3d:63";
-        pmkId = "5265b2887ac349c4096eb7c2e4aaba61";
+        pmkId = "5265b2887ac349c4096eb7c2e4aaba60";
+        //pmkId = "5265b2887ac349c4096eb7c2e4aaba61";
         ssid = "IterationRentalsWifi";
     }
 
@@ -65,12 +67,23 @@ public class Job extends ListenerBase<Job.Listener> {
         return pmkId;
     }
 
-    public String getWordListPath() {
-        return wordListPath != null ? wordListPath : WordLists.getBuiltInPath();
+    public Uri getWordList() {
+        if (wordList == null)
+            wordList = Uri.fromFile(new File(WordLists.getBuiltInPath()));
+        return wordList;
     }
 
-    public String getWordListName() {
-        return Paths.get(getWordListPath()).getFileName().toString();
+    public String getWordListAsString() {
+        return Uri.decode(getWordList().toString());
+    }
+
+    public String getWordListFileName() {
+        String ret = getWordList().getLastPathSegment();
+        return ret.substring(ret.lastIndexOf(':') + 1);
+    }
+
+    public void setWordList(Uri wordList) {
+        this.wordList = wordList;
     }
 
     public String getStateAsStr(Context context) {

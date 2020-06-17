@@ -1,13 +1,18 @@
 package com.talybin.aircat;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.net.Uri;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
@@ -25,7 +30,6 @@ public class Utils {
             Context context, int resourceId, String destDir, String[] executables)
     {
         ZipEntry zipEntry;
-        byte[] buffer = new byte[8 * 1024];
 
         InputStream iss = null;
         ZipInputStream zis = null;
@@ -34,29 +38,17 @@ public class Utils {
             iss = context.getResources().openRawResource(resourceId);
             zis = new ZipInputStream(new BufferedInputStream(iss));
 
-            while ((zipEntry = zis.getNextEntry()) != null) {
-                String filename = destDir + File.separator + zipEntry.getName();
-
+            for (; (zipEntry = zis.getNextEntry()) != null; zis.closeEntry()) {
+                Path filePath = Paths.get(destDir, zipEntry.getName());
                 if (zipEntry.isDirectory())
-                    new File(filename).mkdirs();
-                else {
-                    FileOutputStream fout = new FileOutputStream(filename);
-                    int bytesRead;
-
-                    while ((bytesRead = zis.read(buffer)) != -1) {
-                        fout.write(buffer, 0, bytesRead);
-                    }
-
-                    fout.close();
-                    zis.closeEntry();
-                }
+                    Files.createDirectories(filePath);
+                else
+                    Files.copy(zis, filePath);
             }
 
             // Set executable permission
-            for (String exe : executables) {
-                File fname = new File(destDir + File.separator + exe);
-                fname.setExecutable(true);
-            }
+            for (String exe : executables)
+                new File(destDir + File.separator + exe).setExecutable(true);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -116,5 +108,23 @@ public class Utils {
             buffer.append(digits);
         }
         return buffer.toString();
+    }
+
+    public static long getUriSize(ContentResolver contentResolver, Uri uri) {
+        AssetFileDescriptor afd = null;
+        long size = 0;
+        try {
+            afd = contentResolver.openAssetFileDescriptor(uri, "r");
+        }
+        catch (FileNotFoundException ignored) {}
+        if (afd != null) {
+            size = afd.getLength();
+            try { afd.close(); } catch (IOException ignored) {}
+        }
+        return size;
+    }
+
+    public static long getUriSize(Context context, Uri uri) {
+        return getUriSize(context.getContentResolver(), uri);
     }
 }
