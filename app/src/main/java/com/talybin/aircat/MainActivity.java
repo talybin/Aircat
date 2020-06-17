@@ -48,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
             // After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         }
 
+        WordLists.create(this);
+
         installDependencies();
     }
 
@@ -92,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         //HashCat2.setExePath(filesPath + "/hashcat/hashcat");
         TcpDump.setExePath(filesPath + "/tcpdump/tcpdump");
         //WordLists.setBuiltInPath(filesPath + "/wordlists/built-in.txt");
-        WordLists.setBuiltInPath(filesPath + "/wordlists/english.txt");
+        //WordLists.setBuiltInPath(filesPath + "/wordlists/english.txt");
 
         // Check if already installed
         String[] installed = filesDir.list();

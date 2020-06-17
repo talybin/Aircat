@@ -251,8 +251,10 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
         ((TextView)requireView().findViewById(
                 R.id.job_details_wordlist)).setText(job.getWordListFileName());
 
+        //Utils.retrieveNrRows(getContext(), uri);
 
-        ContentResolver cr = getContext().getContentResolver();
+
+        //ContentResolver cr = getContext().getContentResolver();
 
         Log.d("onActivityResult", "---> 1: " + uri.toString());
         //Log.d("onActivityResult", "---> 2: " + Utils.getUriSize(cr, job.getWordList()));

@@ -4,6 +4,8 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -110,6 +112,62 @@ public class Utils {
         return buffer.toString();
     }
 
+    public static void retrieveNrRows(Context context, Uri uri) {
+        new AsyncTask<Void, Void, Long>() {
+            @Override
+            protected Long doInBackground(Void... iss) {
+                InputStream is = null;
+                byte[] buffer = new byte[4096];
+                long rows = 0;
+
+                try {
+                    is = context.getContentResolver().openInputStream(uri);
+                    if (is != null) {
+                        for (int cnt; (cnt = is.read(buffer)) > 0; ) {
+                            for (int i = 0; i < cnt; ++i)
+                                if (buffer[i] == '\n') ++rows;
+                        }
+                        return rows;
+                    }
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+                finally {
+                    if (is != null)
+                        try { is.close(); } catch (IOException ignored) {}
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Long nrRows) {
+                // TODO save to file
+                if (nrRows != null)
+                    Log.d("retrieveNrRows", uri.getLastPathSegment() + ": " + nrRows);
+            }
+        }.execute();
+/*
+        new Thread() {
+            @Override
+            public void run() {
+
+                InputStream is = context.getContentResolver().openInputStream(uri);
+                ContentResolver contentResolver = context.getContentResolver();
+                byte[] buffer = new byte[4096];
+                long rows = 0;
+
+                for (
+                        int cnt; (cnt = is.read(buffer)) > 0; ) {
+                    for (int i = 0; i < cnt; ++i)
+                        if (buffer[i] == '\n') ++rows;
+                }
+            }
+        }.start();
+ */
+    }
+
+    /*
     public static long getUriSize(ContentResolver contentResolver, Uri uri) {
         AssetFileDescriptor afd = null;
         long size = 0;
@@ -127,4 +185,5 @@ public class Utils {
     public static long getUriSize(Context context, Uri uri) {
         return getUriSize(context.getContentResolver(), uri);
     }
+     */
 }

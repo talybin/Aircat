@@ -69,13 +69,14 @@ public class Job extends ListenerBase<Job.Listener> {
 
     public Uri getWordList() {
         if (wordList == null)
-            wordList = Uri.fromFile(new File(WordLists.getBuiltInPath()));
+            wordList = WordLists.getInstance().getBuiltIn();
         return wordList;
     }
 
+    /*
     public String getWordListAsString() {
         return Uri.decode(getWordList().toString());
-    }
+    }*/
 
     public String getWordListFileName() {
         String ret = getWordList().getLastPathSegment();

@@ -270,6 +270,10 @@ public class HashCat extends Thread implements Handler.Callback {
             pipeStream(contentResolver.openInputStream(
                     job.getWordList()), process.getOutputStream()).start();
 
+            // TODO this should be done once (1 & 2). Utils method? running as soon as added if not exist in file
+            // 1. Read number of rows from file
+            // 2. Calculate if not found
+            // 3. Update file here if number of runned rows greater than from file (no executor needed)
             Future<Long> nrRows = executor.submit(
                     countRows(contentResolver.openInputStream(job.getWordList())));
 
