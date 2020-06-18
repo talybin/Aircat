@@ -27,10 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 public class HashCat extends Thread implements Handler.Callback {
 
-    public static String getExePath() {
-        return App.getContext().getFilesDir() + "/hashcat/hashcat";
-    }
-
     private Handler handler = null;
     private Listener listener = null;
     private Job job = null;
@@ -271,8 +267,8 @@ public class HashCat extends Thread implements Handler.Callback {
             errStream = new InputStreamReader(process.getErrorStream());
             scanner = new Scanner(outStream);
 
-            pipeStream(contentResolver.openInputStream(
-                    job.getWordList().getUri()), process.getOutputStream()).start();
+            pipeStream(contentResolver.openInputStream(job.getWordList().getUri()),
+                       process.getOutputStream()).start();
 
             // TODO this should be done once (1 & 2). Utils method? running as soon as added if not exist in file
             // 1. Read number of rows from file

@@ -8,10 +8,6 @@ import java.io.InputStreamReader;
 
 public class TcpDump extends AsyncTask<Void, String, Eapol> {
 
-    public static String getExePath() {
-        return App.getContext().getFilesDir() + "/tcpdump/tcpdump";
-    }
-
     public interface Listener {
         // When process is started onStart() is invoked.
         // Note, invokes from AsyncTask thread, not from UI thread
@@ -44,7 +40,7 @@ public class TcpDump extends AsyncTask<Void, String, Eapol> {
 
         try {
             process = Runtime.getRuntime().exec(
-                    "su -c " + getExePath() + generateEapolParams());
+                    "su -c " + App.getContext().getFilesDir() + "/tcpdump/tcpdump" + generateEapolParams());
             iss = new InputStreamReader(process.getInputStream());
 
             listener.onStart();

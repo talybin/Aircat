@@ -13,9 +13,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -45,7 +47,7 @@ public class Utils {
                 if (zipEntry.isDirectory())
                     Files.createDirectories(filePath);
                 else
-                    Files.copy(zis, filePath);
+                    Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
             }
 
             // Set executable permission

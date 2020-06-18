@@ -22,6 +22,8 @@ import android.view.MenuItem;
 import java.io.File;
 import java.lang.ref.WeakReference;
 
+import javax.xml.transform.stream.StreamSource;
+
 public class MainActivity extends AppCompatActivity {
 
     private NavController navController;
@@ -79,11 +81,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void installDependencies() {
-        File filesDir = getFilesDir();
-        String filesPath = filesDir.toString();
-
         // Check if already installed
-        String[] installed = filesDir.list();
+        String[] installed = getFilesDir().list();
         if (installed != null && installed.length > 0)
             return;
 
@@ -91,15 +90,14 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             @Override
             public void run() {
-                Context context = getApplicationContext();
                 final String[] executables = {
-                        HashCat.getExePath(),
-                        TcpDump.getExePath(),
+                        "hashcat/hashcat",
+                        "tcpdump/tcpdump",
                 };
-                if (Utils.unpackRawZip(context, R.raw.assets, executables))
+                if (Utils.unpackRawZip(App.getContext(), R.raw.assets, executables))
                     Log.d("MainActivity", "install complete");
                 else
-                    runOnUiThread(() -> new AlertDialog.Builder(context)
+                    runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this)
                             .setTitle(R.string.extraction_error)
                             .setMessage(R.string.extraction_error_msg)
                             .setNegativeButton(android.R.string.ok, null)

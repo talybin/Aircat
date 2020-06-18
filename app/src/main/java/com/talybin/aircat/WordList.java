@@ -56,7 +56,7 @@ public class WordList {
     }
 
     public static WordList getDefault() {
-        String defaultPath = App.getContext().getFilesDir() + "wordlists/english.txt";
+        String defaultPath = App.getContext().getFilesDir() + "/wordlists/english.txt";
         return new WordList(Uri.fromFile(new File(defaultPath)));
     }
 }

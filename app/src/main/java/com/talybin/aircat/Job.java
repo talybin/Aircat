@@ -28,9 +28,7 @@ public class Job extends ListenerBase<Job.Listener> {
     private String password = null;
 
     private State state = State.NOT_RUNNING;
-    // TODO default should be reading from settings, for now hardcoded
-    //private WordList wordList = null;
-    private WordList wordList = new WordList(Uri.fromFile(new File("/data/data/com.talybin.aircat/files/wordlists/english.txt")));
+    private WordList wordList = null;
 
     private HashCat hashCat = null;
 
@@ -71,6 +69,8 @@ public class Job extends ListenerBase<Job.Listener> {
     }
 
     public WordList getWordList() {
+        if (wordList == null)
+            wordList = WordList.getDefault();
         return wordList;
     }
 
