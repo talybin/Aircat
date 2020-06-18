@@ -1,19 +1,14 @@
 package com.talybin.aircat;
 
-import android.content.ContentResolver;
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,8 +25,7 @@ public class Utils {
     private static String wirelessInterface = null;
 
     // Extract files from zipped raw resource file to specified directory
-    public static boolean unpackRawZip(
-            Context context, int resourceId, String destDir, String[] executables)
+    public static boolean unpackRawZip(int resourceId, String destDir, String[] executables)
     {
         ZipEntry zipEntry;
 
@@ -39,7 +33,7 @@ public class Utils {
         ZipInputStream zis = null;
 
         try {
-            iss = context.getResources().openRawResource(resourceId);
+            iss = App.getContext().getResources().openRawResource(resourceId);
             zis = new ZipInputStream(new BufferedInputStream(iss));
 
             for (; (zipEntry = zis.getNextEntry()) != null; zis.closeEntry()) {
@@ -69,8 +63,8 @@ public class Utils {
     }
 
     // Extract files from zipped raw resource file to files directory
-    public static boolean unpackRawZip(Context context, int resourceId, String[] executables) {
-        return unpackRawZip(context, resourceId, context.getFilesDir().toString(), executables);
+    public static boolean unpackRawZip(int resourceId, String[] executables) {
+        return unpackRawZip(resourceId, App.getContext().getFilesDir().toString(), executables);
     }
 
     // Try to find wireless interface.

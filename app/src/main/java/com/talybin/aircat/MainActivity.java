@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
                         "hashcat/hashcat",
                         "tcpdump/tcpdump",
                 };
-                if (Utils.unpackRawZip(App.getContext(), R.raw.assets, executables))
+                if (Utils.unpackRawZip(R.raw.assets, executables))
                     Log.d("MainActivity", "install complete");
                 else
                     runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this)

@@ -1,6 +1,5 @@
 package com.talybin.aircat;
 
-import android.app.Application;
 import android.net.Uri;
 
 import androidx.annotation.NonNull;
@@ -13,7 +12,7 @@ import androidx.room.TypeConverters;
 
 import java.io.File;
 
-@Entity(tableName = "worlist_table")
+@Entity(tableName = "wordlist_table")
 public class WordList {
 
     @PrimaryKey
