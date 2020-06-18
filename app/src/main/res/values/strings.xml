@@ -40,4 +40,12 @@
     <string name="ap_mac">Access point MAC address</string>
     <string name="client_mac">Client MAC address</string>
     <string name="choose_wordlist">Choose a wordlist</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Preference Titles -->
+    <string name="jobs_header">Jobs</string>
+
+    <!-- Jobs Preferences -->
+    <string name="jobs_default_word_list_title">Word list to use by default</string>
+    <string name="jobs_default_word_list_summary">Built-in</string>
 </resources>
