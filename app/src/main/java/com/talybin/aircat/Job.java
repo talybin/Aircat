@@ -6,6 +6,7 @@ import android.util.Log;
 
 import java.io.File;
 
+
 public class Job extends ListenerBase<Job.Listener> {
 
     public enum State {
@@ -27,7 +28,9 @@ public class Job extends ListenerBase<Job.Listener> {
     private String password = null;
 
     private State state = State.NOT_RUNNING;
-    private Uri wordList = null;
+    // TODO default should be reading from settings, for now hardcoded
+    //private WordList wordList = null;
+    private WordList wordList = new WordList(Uri.fromFile(new File("/data/data/com.talybin.aircat/files/wordlists/english.txt")));
 
     private HashCat hashCat = null;
 
@@ -67,23 +70,11 @@ public class Job extends ListenerBase<Job.Listener> {
         return pmkId;
     }
 
-    public Uri getWordList() {
-        if (wordList == null)
-            wordList = WordLists.getInstance().getBuiltIn();
+    public WordList getWordList() {
         return wordList;
     }
 
-    /*
-    public String getWordListAsString() {
-        return Uri.decode(getWordList().toString());
-    }*/
-
-    public String getWordListFileName() {
-        String ret = getWordList().getLastPathSegment();
-        return ret.substring(ret.lastIndexOf(':') + 1);
-    }
-
-    public void setWordList(Uri wordList) {
+    public void setWordList(WordList wordList) {
         this.wordList = wordList;
     }
 

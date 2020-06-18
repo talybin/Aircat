@@ -48,8 +48,6 @@ public class MainActivity extends AppCompatActivity {
             // After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         }
 
-        WordLists.create(this);
-
         installDependencies();
     }
 
