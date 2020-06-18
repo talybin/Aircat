@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -23,15 +24,12 @@ import java.lang.ref.WeakReference;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static WeakReference<MainActivity> weakContext;
     private NavController navController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        weakContext = new WeakReference<>(this);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -74,11 +72,6 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // May return null if context is closed
-    public static MainActivity getContext() {
-        return weakContext.get();
-    }
-
     // Setting up the navigation back button
     @Override
     public boolean onSupportNavigateUp() {
@@ -89,12 +82,6 @@ public class MainActivity extends AppCompatActivity {
         File filesDir = getFilesDir();
         String filesPath = filesDir.toString();
 
-        // Setup constants
-        //HashCat2.setExePath(filesPath + "/hashcat/hashcat");
-        TcpDump.setExePath(filesPath + "/tcpdump/tcpdump");
-        //WordLists.setBuiltInPath(filesPath + "/wordlists/built-in.txt");
-        //WordLists.setBuiltInPath(filesPath + "/wordlists/english.txt");
-
         // Check if already installed
         String[] installed = filesDir.list();
         if (installed != null && installed.length > 0)
@@ -104,14 +91,15 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             @Override
             public void run() {
+                Context context = getApplicationContext();
                 final String[] executables = {
-                        "hashcat/hashcat",
-                        "tcpdump/tcpdump",
+                        HashCat.getExePath(),
+                        TcpDump.getExePath(),
                 };
-                if (Utils.unpackRawZip(getContext(), R.raw.assets, executables))
+                if (Utils.unpackRawZip(context, R.raw.assets, executables))
                     Log.d("MainActivity", "install complete");
                 else
-                    runOnUiThread(() -> new AlertDialog.Builder(getContext())
+                    runOnUiThread(() -> new AlertDialog.Builder(context)
                             .setTitle(R.string.extraction_error)
                             .setMessage(R.string.extraction_error_msg)
                             .setNegativeButton(android.R.string.ok, null)

@@ -1,5 +1,6 @@
 package com.talybin.aircat;
 
+import android.app.Application;
 import android.net.Uri;
 
 import androidx.annotation.NonNull;
@@ -52,5 +53,10 @@ public class WordList {
     String getFileName() {
         String ret = Uri.decode(uri.toString());
         return ret.substring(ret.lastIndexOf("//") + 1);
+    }
+
+    public static WordList getDefault() {
+        String defaultPath = App.getContext().getFilesDir() + "wordlists/english.txt";
+        return new WordList(Uri.fromFile(new File(defaultPath)));
     }
 }

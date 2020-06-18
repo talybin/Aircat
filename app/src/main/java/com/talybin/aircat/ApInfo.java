@@ -29,7 +29,7 @@ public class ApInfo {
     }
 
     String getSSID() {
-        return hidden ? MainActivity.getContext().getString(R.string.hidden) : ssid;
+        return hidden ? App.getContext().getString(R.string.hidden) : ssid;
     }
 
     void merge(ScanResult sr) {

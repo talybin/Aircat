@@ -27,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 
 public class HashCat extends Thread implements Handler.Callback {
 
+    public static String getExePath() {
+        return App.getContext().getFilesDir() + "/hashcat/hashcat";
+    }
+
     private Handler handler = null;
     private Listener listener = null;
     private Job job = null;
