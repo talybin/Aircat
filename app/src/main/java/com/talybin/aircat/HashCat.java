@@ -29,7 +29,7 @@ public class HashCat extends Thread implements Handler.Callback {
 
     private Handler handler = null;
     private Listener listener = null;
-    private Job job = null;
+    private Job2 job = null;
     private Process process = null;
     private ContentResolver contentResolver = null;
 
@@ -101,7 +101,7 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     // Constructor
-    public HashCat(Context context, Job job, Listener listener) {
+    public HashCat(Context context, Job2 job, Listener listener) {
         super();
 
         this.job = job;
@@ -115,7 +115,7 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     // Constructor
-    public HashCat(Context context, Job job) {
+    public HashCat(Context context, Job2 job) {
         this(context, job, null);
     }
 
@@ -135,7 +135,7 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
-    public static String makeHash(Job job) {
+    public static String makeHash(Job2 job) {
         return String.format("%s*%s*%s*%s",
                 job.getHash(),
                 job.getApMac().replace(":", ""),
@@ -173,7 +173,7 @@ public class HashCat extends Thread implements Handler.Callback {
         Log.d("HashCat", "---> Got message: " + msg.what);
         switch (msg.what) {
             case HashCat.MSG_SET_STATE:
-                job.setState((Job.State)msg.obj);
+                job.setState((Job2.State)msg.obj);
                 break;
 
             case HashCat.MSG_SET_PROGRESS:
@@ -233,7 +233,7 @@ public class HashCat extends Thread implements Handler.Callback {
             return;
 
         notifyHandler(MSG_SET_PROGRESS, null);
-        notifyHandler(MSG_SET_STATE, Job.State.STARTING);
+        notifyHandler(MSG_SET_STATE, Job2.State.STARTING);
 
         InputStreamReader outStream = null;
         InputStreamReader errStream = null;
@@ -303,7 +303,7 @@ public class HashCat extends Thread implements Handler.Callback {
                         // Send status
                         if (progress.nr_complete == 0) {
                             //progress.total = scanner.nextLong();
-                            notifyHandler(MSG_SET_STATE, Job.State.RUNNING);
+                            notifyHandler(MSG_SET_STATE, Job2.State.RUNNING);
                         }
                         if (progress.total == 0 && nrRows.isDone()) {
                             progress.total = nrRows.get();
@@ -327,7 +327,7 @@ public class HashCat extends Thread implements Handler.Callback {
                 throw new Exception(sb.toString());
             }
 
-            notifyHandler(MSG_SET_STATE, Job.State.NOT_RUNNING);
+            notifyHandler(MSG_SET_STATE, Job2.State.NOT_RUNNING);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -350,13 +350,13 @@ public class HashCat extends Thread implements Handler.Callback {
     public void abort() {
         if (process != null) {
             if (process.isAlive()) {
-                notifyHandler(MSG_SET_STATE, Job.State.STOPPING);
+                notifyHandler(MSG_SET_STATE, Job2.State.STOPPING);
                 // TODO send 'q' instead, join(a couple of secs) and destroy
                 process.destroy();
                 try { join(); } catch (InterruptedException ignored) {}
             }
             process = null;
-            notifyHandler(MSG_SET_STATE, Job.State.NOT_RUNNING);
+            notifyHandler(MSG_SET_STATE, Job2.State.NOT_RUNNING);
         }
     }
 }

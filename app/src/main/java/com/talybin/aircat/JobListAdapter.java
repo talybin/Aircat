@@ -34,7 +34,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     static class JobViewHolder extends RecyclerView.ViewHolder
-            implements Job.Listener, View.OnAttachStateChangeListener
+            implements Job2.Listener, View.OnAttachStateChangeListener
     {
         private TextView ssid;
         private TextView password;
@@ -44,7 +44,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private TextView estTime;
         private ProgressBar progressBar;
 
-        private Job job;
+        private Job2 job;
 
         JobViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -61,7 +61,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             itemView.addOnAttachStateChangeListener(this);
         }
 
-        void bindData(Job job) {
+        void bindData(Job2 job) {
             if (this.job != null)
                 this.job.removeListener(this);
             this.job = job;
@@ -74,12 +74,12 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         @Override
-        public void onJobStateChange(Job job) {
+        public void onJobStateChange(Job2 job) {
             state.setText(job.getStateAsStr(itemView.getContext()));
         }
 
         @Override
-        public void onHashCatProgressChange(Job job, HashCat.Progress progress) {
+        public void onHashCatProgressChange(Job2 job, HashCat.Progress progress) {
             Context context = itemView.getContext();
 
             float percentComplete = 0;

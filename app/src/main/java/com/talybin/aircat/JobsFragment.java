@@ -69,7 +69,7 @@ public class JobsFragment extends Fragment
         jobManager.addListener(this);
 
         // Test
-        jobManager.add(new Job());
+        jobManager.add(new Job2());
     }
 
     @Override
@@ -79,7 +79,7 @@ public class JobsFragment extends Fragment
     }
 
     @Override
-    public void onNewJob(Job job) {
+    public void onNewJob(Job2 job) {
         // TODO add listeners here
         adapter.notifyDataSetChanged();
     }

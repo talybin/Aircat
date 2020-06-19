@@ -10,14 +10,14 @@ import java.util.Set;
 public class JobManager {
 
     public interface Listener {
-        void onNewJob(Job job);
+        void onNewJob(Job2 job);
         //void onJobStart(HashCat handler, Job job);
     }
 
     private static JobManager instance = new JobManager();
 
     private Set<Listener> listeners;
-    private List<Job> jobs;
+    private List<Job2> jobs;
 
     public static JobManager getInstance() {
         return instance;
@@ -36,11 +36,11 @@ public class JobManager {
         listeners.remove(listener);
     }
 
-    public List<Job> getJobs() {
+    public List<Job2> getJobs() {
         return jobs;
     }
 
-    public void add(Job job) {
+    public void add(Job2 job) {
         jobs.add(job);
 
         Log.d("JobManager::add", "---> ap mac [" + job.getApMac() + "]");
@@ -54,14 +54,14 @@ public class JobManager {
     }
 
     public void add(ApInfo apInfo) {
-        add(new Job(apInfo));
+        add(new Job2(apInfo));
     }
 
     public void remove(int pos) {
         jobs.remove(pos).stop();
     }
 
-    public void remove(Job job) {
+    public void remove(Job2 job) {
         job.stop();
         jobs.remove(job);
     }

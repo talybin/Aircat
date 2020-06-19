@@ -2,7 +2,6 @@ package com.talybin.aircat;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -30,7 +29,7 @@ import java.util.Objects;
 import static android.app.Activity.RESULT_OK;
 
 
-public class JobDetailsFragment extends Fragment implements Job.Listener {
+public class JobDetailsFragment extends Fragment implements Job2.Listener {
 
     private static final int FILE_SELECT_CODE = 0;
 
@@ -39,7 +38,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     private WordListViewModel wordListViewModel;
 
     private JobManager jobManager = null;
-    private Job job = null;
+    private Job2 job = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -121,7 +120,7 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         if (job != null) {
-            boolean notRunning = job.getState() == Job.State.NOT_RUNNING;
+            boolean notRunning = job.getState() == Job2.State.NOT_RUNNING;
             menu.findItem(R.id.action_pause).setVisible(!notRunning);
             menu.findItem(R.id.action_start).setVisible(notRunning);
         }
@@ -163,12 +162,12 @@ public class JobDetailsFragment extends Fragment implements Job.Listener {
     }
 
     @Override
-    public void onJobStateChange(Job job) {
+    public void onJobStateChange(Job2 job) {
         requireActivity().invalidateOptionsMenu();
     }
 
     @Override
-    public void onHashCatProgressChange(Job job, HashCat.Progress progress) {}
+    public void onHashCatProgressChange(Job2 job, HashCat.Progress progress) {}
 
     private void showBottomMenu() {
         // This menu is for actions on retrieved password
