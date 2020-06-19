@@ -13,7 +13,8 @@ import java.util.List;
 class AircatRepository {
 
     private WordListDao wordListDao;
-    private LiveData<List<WordList>> allWordLists;
+    private JobDao jobDao;
+    private LiveData<List<Job>> allJobs;
 
     // Note that in order to unit test the AircatRepository, you have to remove the Application
     // dependency. This adds complexity and much more code, and this sample is not about testing.
@@ -22,13 +23,14 @@ class AircatRepository {
     AircatRepository(Application application) {
         AircatRoomDatabase db = AircatRoomDatabase.getDatabase(application);
         wordListDao = db.wordListDao();
-        allWordLists = wordListDao.getWordLists();
+        jobDao = db.jobDao();
+        allJobs = jobDao.getJobs();
     }
 
     // Room executes all queries on a separate thread.
     // Observed LiveData will notify the observer when the data has changed.
-    LiveData<List<WordList>> getAllWordLists() {
-        return allWordLists;
+    LiveData<List<Job>> getAllJobs() {
+        return allJobs;
     }
 
     void insert(WordList wordList) {
@@ -36,6 +38,12 @@ class AircatRepository {
         // that you're not doing any long running operations on the main thread, blocking the UI.
         AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
             wordListDao.insert(wordList);
+        });
+    }
+
+    void insert(Job job) {
+        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+            jobDao.insert(job);
         });
     }
 }

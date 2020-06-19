@@ -1,5 +1,6 @@
 package com.talybin.aircat;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -8,19 +9,16 @@ import androidx.room.Query;
 import java.util.List;
 
 @Dao
-public interface WordListDao {
+public interface JobDao {
 
     // Allowing the insert of the same word multiple times by passing a
     // conflict resolution strategy
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    void insert(WordList wordList);
+    void insert(Job job);
 
-    @Query("DELETE FROM wordlist_table")
+    @Query("DELETE FROM job_table")
     void deleteAll();
 
-    @Query("SELECT * FROM wordlist_table")
-    List<WordList> getWordLists();
-
-    //@Query("SELECT * FROM wordlist_table WHERE uri = ':uri'")
-    //WordList getWordList(Uri uri);
+    @Query("SELECT * FROM job_table")
+    LiveData<List<Job>> getJobs();
 }

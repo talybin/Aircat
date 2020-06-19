@@ -54,8 +54,9 @@ public class WordList {
         return ret.substring(ret.lastIndexOf("//") + 1);
     }
 
-    public static WordList getDefault() {
+    public static Uri getDefault() {
         String defaultPath = App.getContext().getFilesDir() + "/wordlists/english.txt";
-        return new WordList(Uri.fromFile(new File(defaultPath)));
+        return Uri.fromFile(new File(defaultPath));
+        //return new WordList(Uri.fromFile(new File(defaultPath)));
     }
 }

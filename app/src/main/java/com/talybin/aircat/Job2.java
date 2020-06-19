@@ -67,7 +67,7 @@ public class Job2 extends ListenerBase<Job2.Listener> {
 
     public WordList getWordList() {
         if (wordList == null)
-            wordList = WordList.getDefault();
+            wordList = new WordList(WordList.getDefault());
         return wordList;
     }
 

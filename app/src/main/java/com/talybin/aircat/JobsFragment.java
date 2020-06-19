@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -8,11 +9,14 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,15 +24,19 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import static android.app.Activity.RESULT_OK;
+
 public class JobsFragment extends Fragment
-        implements JobManager.Listener, JobListAdapter.Listener, ActionMode.Callback
+        implements JobManager.Listener, JobListAdapter2.Listener, ActionMode.Callback
 {
+    private static final int NEW_JOB_ACTIVITY_REQUEST_CODE = 1;
 
     private JobListAdapter adapter;
     private FloatingActionButton createJobBut;
 
     private NavController navController;
 
+    private JobViewModel jobViewModel;
     private JobManager jobManager;
 
     private androidx.appcompat.view.ActionMode actionMode = null;
@@ -57,19 +65,25 @@ public class JobsFragment extends Fragment
 
         // Specify an adapter
         // Navigate to job details on view click
-        adapter = new JobListAdapter(this);
+        adapter = new JobListAdapter();
         jobList.setAdapter(adapter);
+
+        jobViewModel = new ViewModelProvider(this).get(JobViewModel.class);
+        jobViewModel.getAllJobs().observe(getViewLifecycleOwner(), jobs -> {
+            // Update the cached copy of the jobs in the adapter.
+            adapter.setJobs(jobs);
+        });
 
         // Create new job button
         createJobBut = view.findViewById(R.id.createNewJobBut);
-        createJobBut.setOnClickListener(
-                v -> navController.navigate(R.id.action_JobsFragment_to_CreateJobFragment));
+
+        createJobBut.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), NewJobActivity.class);
+            startActivityForResult(intent, NEW_JOB_ACTIVITY_REQUEST_CODE);
+        });
 
         // Listen to job list changes
         jobManager.addListener(this);
-
-        // Test
-        jobManager.add(new Job2());
     }
 
     @Override
@@ -79,13 +93,33 @@ public class JobsFragment extends Fragment
     }
 
     @Override
-    public void onNewJob(Job2 job) {
-        // TODO add listeners here
-        adapter.notifyDataSetChanged();
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == NEW_JOB_ACTIVITY_REQUEST_CODE &&
+                resultCode == RESULT_OK &&
+                data != null)
+        {
+            String pmkId = data.getStringExtra(NewJobActivity.EXTRA_PMKID);
+            String ssid = data.getStringExtra(NewJobActivity.EXTRA_SSID);
+            String apMac = data.getStringExtra(NewJobActivity.EXTRA_AP_MAC);
+            String clMac = data.getStringExtra(NewJobActivity.EXTRA_CLIENT_MAC);
+
+            if (pmkId != null && apMac != null && clMac != null) {
+                jobViewModel.insert(new Job(
+                        pmkId, ssid, apMac, clMac, WordList.getDefault(), null));
+            }
+            else
+                Toast.makeText(getContext(), R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
-    public void onItemClick(JobListAdapter.JobViewHolder holder) {
+    public void onNewJob(Job2 j) {
+    }
+
+    @Override
+    public void onItemClick(JobListAdapter2.JobViewHolder holder) {
         int position = holder.getAdapterPosition();
         if (actionMode == null) {
             // Show details
@@ -98,7 +132,7 @@ public class JobsFragment extends Fragment
     }
 
     @Override
-    public boolean onItemLongClick(JobListAdapter.JobViewHolder holder) {
+    public boolean onItemLongClick(JobListAdapter2.JobViewHolder holder) {
         toggleSelection(holder.getAdapterPosition());
         return true;
     }

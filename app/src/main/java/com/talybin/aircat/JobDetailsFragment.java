@@ -72,7 +72,7 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
         wordListViewModel = new ViewModelProvider(this).get(WordListViewModel.class);
 
         View jobItem = view.findViewById(R.id.job_details_item);
-        JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(jobItem);
+        JobListAdapter2.JobViewHolder viewHolder = new JobListAdapter2.JobViewHolder(jobItem);
         viewHolder.bindData(job);
 
         // Alternatives for recovered password
