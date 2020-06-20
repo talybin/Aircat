@@ -15,6 +15,11 @@ import java.util.Set;
 
 public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    interface Listener {
+        void onItemClick(JobViewHolder holder);
+        boolean onItemLongClick(JobViewHolder holder);
+    }
+
     static class JobViewHolder extends RecyclerView.ViewHolder {
 
         private TextView ssid;
@@ -49,10 +54,13 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    private Listener listener;
+
     private List<Job> jobs; // Cached copy of jobs
     private Set<Integer> selectedItems = new HashSet<>();
 
-    JobListAdapter() {
+    JobListAdapter(Listener listener) {
+        this.listener = listener;
     }
 
     @NonNull
@@ -63,6 +71,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             return new EmptyViewHolder(view);
         else {
             JobViewHolder holder = new JobViewHolder(view);
+
+            view.setOnClickListener(v -> listener.onItemClick(holder));
+            view.setOnLongClickListener(v -> listener.onItemLongClick(holder));
+
             return holder;
         }
     }

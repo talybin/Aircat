@@ -24,10 +24,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.Set;
+
 import static android.app.Activity.RESULT_OK;
 
 public class JobsFragment extends Fragment
-        implements JobManager.Listener, JobListAdapter2.Listener, ActionMode.Callback
+        implements JobListAdapter.Listener, ActionMode.Callback
 {
     private static final int NEW_JOB_ACTIVITY_REQUEST_CODE = 1;
 
@@ -37,7 +39,6 @@ public class JobsFragment extends Fragment
     private NavController navController;
 
     private JobViewModel jobViewModel;
-    private JobManager jobManager;
 
     private androidx.appcompat.view.ActionMode actionMode = null;
 
@@ -56,8 +57,6 @@ public class JobsFragment extends Fragment
         Context ctx = requireContext();
         navController = NavHostFragment.findNavController(JobsFragment.this);
 
-        jobManager = JobManager.getInstance();
-
         // Job list
         RecyclerView jobList = view.findViewById(R.id.job_list);
         jobList.setLayoutManager(new LinearLayoutManager(ctx));
@@ -65,11 +64,11 @@ public class JobsFragment extends Fragment
 
         // Specify an adapter
         // Navigate to job details on view click
-        adapter = new JobListAdapter();
+        adapter = new JobListAdapter(this);
         jobList.setAdapter(adapter);
 
         jobViewModel = new ViewModelProvider(this).get(JobViewModel.class);
-        jobViewModel.getAllJobs().observe(getViewLifecycleOwner(), jobs -> {
+        jobViewModel.getAll().observe(getViewLifecycleOwner(), jobs -> {
             // Update the cached copy of the jobs in the adapter.
             adapter.setJobs(jobs);
         });
@@ -81,14 +80,10 @@ public class JobsFragment extends Fragment
             Intent intent = new Intent(getActivity(), NewJobActivity.class);
             startActivityForResult(intent, NEW_JOB_ACTIVITY_REQUEST_CODE);
         });
-
-        // Listen to job list changes
-        jobManager.addListener(this);
     }
 
     @Override
     public void onDestroyView() {
-        jobManager.removeListener(this);
         super.onDestroyView();
     }
 
@@ -115,11 +110,7 @@ public class JobsFragment extends Fragment
     }
 
     @Override
-    public void onNewJob(Job2 j) {
-    }
-
-    @Override
-    public void onItemClick(JobListAdapter2.JobViewHolder holder) {
+    public void onItemClick(JobListAdapter.JobViewHolder holder) {
         int position = holder.getAdapterPosition();
         if (actionMode == null) {
             // Show details
@@ -132,7 +123,7 @@ public class JobsFragment extends Fragment
     }
 
     @Override
-    public boolean onItemLongClick(JobListAdapter2.JobViewHolder holder) {
+    public boolean onItemLongClick(JobListAdapter.JobViewHolder holder) {
         toggleSelection(holder.getAdapterPosition());
         return true;
     }
@@ -178,17 +169,21 @@ public class JobsFragment extends Fragment
         switch (item.getItemId()) {
 
             case R.id.action_remove:
-                // Remove selected items. Since removal is by position, we
-                // need to sort and remove in reverse order.
-                adapter.getSelectedItems().stream()
-                        .sorted((i1, i2) -> i2 - i1)    // Reverse sort
-                        .forEach(jobManager::remove);
+                Set<Integer> items = adapter.getSelectedItems();
+
+                if (items.size() == jobViewModel.size())
+                    jobViewModel.deleteAll();
+                else if (jobViewModel.getAll().getValue() != null) {
+                    items.stream()
+                            .map(idx -> jobViewModel.getAll().getValue().get(idx))
+                            .forEach(jobViewModel::delete);
+                }
                 // Selections in adapter will be cleared in finish()
                 actionMode.finish();
                 return true;
 
             case R.id.action_select_all:
-                adapter.selectRange(0, jobManager.getJobs().size());
+                adapter.selectRange(0, jobViewModel.size());
                 updateActionModeTitle();
                 return true;
         }

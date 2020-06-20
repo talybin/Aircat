@@ -33,6 +33,12 @@ class AircatRepository {
         return allJobs;
     }
 
+    void deleteAllJobs() {
+        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+            jobDao.deleteAll();
+        });
+    }
+
     void insert(WordList wordList) {
         // You must call this on a non-UI thread or your app will throw an exception. Room ensures
         // that you're not doing any long running operations on the main thread, blocking the UI.
@@ -44,6 +50,12 @@ class AircatRepository {
     void insert(Job job) {
         AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
             jobDao.insert(job);
+        });
+    }
+
+    void delete(Job job) {
+        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+            jobDao.delete(job);
         });
     }
 }

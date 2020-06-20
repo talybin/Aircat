@@ -2,6 +2,7 @@ package com.talybin.aircat;
 
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
+import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
@@ -15,6 +16,9 @@ public interface JobDao {
     // conflict resolution strategy
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     void insert(Job job);
+
+    @Delete
+    void delete(Job job);
 
     @Query("DELETE FROM job_table")
     void deleteAll();

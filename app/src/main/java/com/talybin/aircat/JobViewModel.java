@@ -39,11 +39,23 @@ public class JobViewModel extends AndroidViewModel {
         allJobs = repository.getAllJobs();
     }
 
-    LiveData<List<Job>> getAllJobs() {
+    LiveData<List<Job>> getAll() {
         return allJobs;
+    }
+
+    void delete(Job job) {
+        repository.delete(job);
+    }
+
+    void deleteAll() {
+        repository.deleteAllJobs();
     }
 
     void insert(Job job) {
         repository.insert(job);
+    }
+
+    int size() {
+        return allJobs.getValue() != null ? allJobs.getValue().size() : 0;
     }
 }
