@@ -3,6 +3,7 @@ package com.talybin.aircat;
 import android.app.Application;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
@@ -55,7 +56,11 @@ public class JobViewModel extends AndroidViewModel {
         repository.insert(job);
     }
 
-    int size() {
+    int getSize() {
         return allJobs.getValue() != null ? allJobs.getValue().size() : 0;
+    }
+
+    @Nullable Job get(int index) {
+        return allJobs.getValue() != null ? allJobs.getValue().get(index) : null;
     }
 }

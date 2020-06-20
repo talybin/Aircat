@@ -35,10 +35,10 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
 
     private BottomSheetDialog bottomDialog;
 
+    private JobViewModel jobViewModel;
     private WordListViewModel wordListViewModel;
 
-    private JobManager jobManager = null;
-    private Job2 job = null;
+    private Job job = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -57,22 +57,22 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        jobManager = JobManager.getInstance();
+        ViewModelProvider modelProvider = new ViewModelProvider(this);
+        jobViewModel = modelProvider.get(JobViewModel.class);
+        wordListViewModel = modelProvider.get(WordListViewModel.class);
 
         // Retrieve the job
         Bundle args = getArguments();
         if (args != null)
-            job = jobManager.getJobs().get(args.getInt("job_position"));
+            job = jobViewModel.get(args.getInt("job_position"));
         if (job == null) {  // Should never happen
             Log.e(this.getClass().getName(), "Missing job argument");
             goBack();
             return;
         }
 
-        wordListViewModel = new ViewModelProvider(this).get(WordListViewModel.class);
-
         View jobItem = view.findViewById(R.id.job_details_item);
-        JobListAdapter2.JobViewHolder viewHolder = new JobListAdapter2.JobViewHolder(jobItem);
+        JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(jobItem);
         viewHolder.bindData(job);
 
         // Alternatives for recovered password
@@ -82,8 +82,8 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
         // Fill fields
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
         ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
-        ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getHash());
-        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getFileName());
+        ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getPmkId());
+        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getEncodedPath());
 
         // Click listeners
         jobItem.setOnClickListener(v -> showBottomMenu());
@@ -99,12 +99,12 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
             v.setOnClickListener(this::onViewClick);
         }
 
-        job.addListener(this);
+        //job.addListener(this);
     }
 
     @Override
     public void onDestroyView() {
-        job.removeListener(this);
+        //job.removeListener(this);
         job = null;
         bottomDialog = null;
 
@@ -120,7 +120,8 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         if (job != null) {
-            boolean notRunning = job.getState() == Job2.State.NOT_RUNNING;
+            //boolean notRunning = job.getState() == Job2.State.NOT_RUNNING;
+            boolean notRunning = true;
             menu.findItem(R.id.action_pause).setVisible(!notRunning);
             menu.findItem(R.id.action_start).setVisible(notRunning);
         }
@@ -148,16 +149,18 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
     }
 
     private void startJob() {
+        /*
         Context context = getContext();
         if (!job.start(context))
             Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+         */
     }
 
     private void pauseJob() {
     }
 
     private void removeJob() {
-        jobManager.remove(job);
+        jobViewModel.delete(job);
         goBack();
     }
 
@@ -192,8 +195,8 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
                 break;
 
             case R.id.job_details_hash_info:
-                if (copyToClipboard("hashcat", HashCat.makeHash(job)))
-                    Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
+                //if (copyToClipboard("hashcat", HashCat.makeHash(job)))
+                //    Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
                 break;
             default:
                 Toast.makeText(getContext(), R.string.not_implemented_yet, Toast.LENGTH_SHORT).show();
@@ -244,7 +247,7 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
             wordListViewModel.insert(wordList);
 
             // Update current job and the view
-            job.setWordList(wordList);
+            //job.setWordList(wordList);
             ((TextView) requireView().findViewById(
                     R.id.job_details_wordlist)).setText(wordList.getFileName());
         }

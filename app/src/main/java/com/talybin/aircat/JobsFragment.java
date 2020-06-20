@@ -171,11 +171,11 @@ public class JobsFragment extends Fragment
             case R.id.action_remove:
                 Set<Integer> items = adapter.getSelectedItems();
 
-                if (items.size() == jobViewModel.size())
+                if (items.size() == jobViewModel.getSize())
                     jobViewModel.deleteAll();
-                else if (jobViewModel.getAll().getValue() != null) {
+                else {
                     items.stream()
-                            .map(idx -> jobViewModel.getAll().getValue().get(idx))
+                            .map(idx -> jobViewModel.get(idx))
                             .forEach(jobViewModel::delete);
                 }
                 // Selections in adapter will be cleared in finish()
@@ -183,7 +183,7 @@ public class JobsFragment extends Fragment
                 return true;
 
             case R.id.action_select_all:
-                adapter.selectRange(0, jobViewModel.size());
+                adapter.selectRange(0, jobViewModel.getSize());
                 updateActionModeTitle();
                 return true;
         }
