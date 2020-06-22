@@ -44,6 +44,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         void bindData(Job job) {
             ssid.setText(job.getSsid());
+
+            job.setListener(() -> {
+                state.setText(job.getState().toString());
+            });
         }
     }
 
@@ -106,6 +110,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     void setJobs(List<Job> jobs) {
         this.jobs = jobs;
+        clearSelections();
         notifyDataSetChanged();
     }
 

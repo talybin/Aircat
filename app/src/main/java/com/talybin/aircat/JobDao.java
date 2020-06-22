@@ -6,6 +6,7 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import java.util.List;
 
@@ -23,6 +24,12 @@ public interface JobDao {
     @Query("DELETE FROM job_table")
     void deleteAll();
 
+    //@Query("SELECT * FROM job_table WHERE pmkid = :id")
+    //LiveData<Job> get(String id);
+
     @Query("SELECT * FROM job_table")
     LiveData<List<Job>> getJobs();
+
+    @Update
+    void update(Job job);
 }

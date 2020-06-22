@@ -58,4 +58,10 @@ class AircatRepository {
             jobDao.delete(job);
         });
     }
+
+    void update(Job job) {
+        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+            jobDao.update(job);
+        });
+    }
 }

@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.app.Application;
+import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -62,5 +63,9 @@ public class JobViewModel extends AndroidViewModel {
 
     @Nullable Job get(int index) {
         return allJobs.getValue() != null ? allJobs.getValue().get(index) : null;
+    }
+
+    void update(Job job) {
+        repository.update(job);
     }
 }

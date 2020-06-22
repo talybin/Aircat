@@ -1,30 +1,48 @@
 package com.talybin.aircat;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.PrimaryKey;
 import androidx.transition.ChangeBounds;
 import androidx.transition.TransitionManager;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 public class NewJobActivity extends AppCompatActivity implements ApListAdapter.ClickListener {
 
@@ -101,8 +119,7 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
         super.onDestroy();
     }
 
-    private void getScanResults()
-    {
+    private void getScanResults() {
         Map<String, ApInfo> filterMap = new HashMap<>();
         for (ScanResult sr : wifiManager.getScanResults()) {
             // Filter on WPA only
@@ -127,8 +144,7 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
         if (scanResults.isEmpty()) {
             apList.setVisibility(View.GONE);
             emptyView.setVisibility(View.VISIBLE);
-        }
-        else {
+        } else {
             apList.setVisibility(View.VISIBLE);
             emptyView.setVisibility(View.GONE);
         }
@@ -141,19 +157,87 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
         adapter.notifyDataSetChanged();
     }
 
-    @Override
-    public void onClick(final ApInfo apInfo) {
-        new FetchPmkId(this, apInfo, eapol -> {
-            Intent replyIntent = new Intent();
-
-            replyIntent.putExtra(EXTRA_PMKID, eapol.pmkId);
-            replyIntent.putExtra(EXTRA_SSID, apInfo.ssid);
-            replyIntent.putExtra(EXTRA_AP_MAC, eapol.apMac);
-            replyIntent.putExtra(EXTRA_CLIENT_MAC, eapol.clientMac);
-
-            setResult(RESULT_OK, replyIntent);
-            finish();
-        });
+    private interface EapolListener {
+        void onResult(Eapol eapol, String err);
     }
 
+    private Process fetchEapol(ApInfo apInfo, EapolListener callback) {
+        try {
+            Process process = Runtime.getRuntime().exec(
+                    "su -c " + getFilesDir() + "/tcpdump/tcpdump" + generateEapolParams());
+            InputStream is = process.getInputStream();
+            int networkId = apInfo.connect(wifiManager);
+
+            CompletableFuture.supplyAsync(() -> Eapol.fromStream(is)).handle((res, ex) -> {
+                process.destroy();
+
+                runOnUiThread(() -> {
+                    // Clean up
+                    wifiManager.removeNetwork(networkId);
+
+                    if (ex != null)
+                        callback.onResult(null, ex.getMessage());
+                    else if (!res.isValid())
+                        callback.onResult(null, getString(R.string.pmkid_not_supported, apInfo.getSSID()));
+                    else
+                        callback.onResult(res, null);
+                });
+                return null;
+            });
+
+            return process;
+        }
+        catch (Exception e) {
+            callback.onResult(null, e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public void onClick(ApInfo apInfo) {
+        ProgressDialog waitDialog = new ProgressDialog(this);
+
+        Process process = fetchEapol(apInfo, ((eapol, err) -> {
+            waitDialog.dismiss();
+
+            if (err != null)
+                Toast.makeText(this, err, Toast.LENGTH_LONG).show();
+            else {
+                Intent replyIntent = new Intent();
+
+                replyIntent.putExtra(EXTRA_PMKID, eapol.pmkId);
+                replyIntent.putExtra(EXTRA_SSID, apInfo.ssid);
+                replyIntent.putExtra(EXTRA_AP_MAC, eapol.apMac);
+                replyIntent.putExtra(EXTRA_CLIENT_MAC, eapol.clientMac);
+
+                setResult(RESULT_OK, replyIntent);
+                finish();
+            }
+        }));
+
+        if (process != null) {
+            waitDialog.setTitle(apInfo.getSSID());
+            waitDialog.setMessage(getString(R.string.getting_pmkid));
+            waitDialog.setCancelable(false);
+
+            waitDialog.setButton(
+                    DialogInterface.BUTTON_NEGATIVE,
+                    getString(android.R.string.cancel),
+                    (dialog, which) -> process.destroy());
+
+            waitDialog.show();
+        }
+    }
+
+    private static String generateEapolParams() {
+        // Listen to EAPOL that has PMKID
+        final String filter = " \"ether proto 0x888e and ether[0x15:2] > 0\"";
+
+        // Defining a String which will contain the parameters.
+        return  " -i " + Utils.getWirelessInterface()  // Recognizing the chosen interface
+                + " -c 1"       // Read one packet
+                + " -s 200"     // Set snaplen size to 200, EAPOL is just below this
+                + " -entqx"     // Dump payload as hex
+                + filter;
+    }
 }

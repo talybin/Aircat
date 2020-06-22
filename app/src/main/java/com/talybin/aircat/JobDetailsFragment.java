@@ -31,6 +31,8 @@ import static android.app.Activity.RESULT_OK;
 
 public class JobDetailsFragment extends Fragment implements Job2.Listener {
 
+    public static final String KEY_JOB_ID = "job_id";
+
     private static final int FILE_SELECT_CODE = 0;
 
     private BottomSheetDialog bottomDialog;
@@ -62,33 +64,32 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
         wordListViewModel = modelProvider.get(WordListViewModel.class);
 
         // Retrieve the job
+        String key = null;
         Bundle args = getArguments();
         if (args != null)
-            job = jobViewModel.get(args.getInt("job_position"));
-        if (job == null) {  // Should never happen
-            Log.e(this.getClass().getName(), "Missing job argument");
+            key = args.getString(KEY_JOB_ID);
+        if (key == null) {  // Should never happen
+            Log.e(this.getClass().getName(), "Missing key argument");
             goBack();
             return;
         }
 
-        View jobItem = view.findViewById(R.id.job_details_item);
-        JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(jobItem);
-        viewHolder.bindData(job);
+        // Wait for job to be loaded
+        String finalKey = key;
+        jobViewModel.getAll().observe(getViewLifecycleOwner(), jobs -> {
+            Log.d("onViewCreated", "---> observe");
+            for (Job j : jobs) {
+                if (j.getPmkId().equals(finalKey)) {
+                    setJob(j);
+                    return;
+                }
+            }
+            goBack();
+        });
 
         // Alternatives for recovered password
         bottomDialog = new BottomSheetDialog(requireContext());
         bottomDialog.setContentView(R.layout.job_item_bottom_sheet);
-
-        // Fill fields
-        ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
-        ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
-        ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getPmkId());
-        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getEncodedPath());
-
-        // Click listeners
-        jobItem.setOnClickListener(v -> showBottomMenu());
-        view.findViewById(R.id.job_details_hash_info).setOnClickListener(this::onViewClick);
-        view.findViewById(R.id.job_details_wordlist_info).setOnClickListener(this::onViewClick);
 
         final int[] jobActions = {
                 R.id.job_action_copy,
@@ -100,6 +101,29 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
         }
 
         //job.addListener(this);
+    }
+
+    private void setJob(Job job) {
+        this.job = job;
+
+        View view = requireView();
+
+        View jobItem = view.findViewById(R.id.job_details_item);
+        JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(jobItem);
+        viewHolder.bindData(job);
+
+        // Fill fields
+        ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
+        ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
+        ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getPmkId());
+        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getPath());
+
+        // Click listeners
+        jobItem.setOnClickListener(v -> showBottomMenu());
+        view.findViewById(R.id.job_details_hash_info).setOnClickListener(this::onViewClick);
+        view.findViewById(R.id.job_details_wordlist_info).setOnClickListener(this::onViewClick);
+
+        requireActivity().invalidateOptionsMenu();
     }
 
     @Override
@@ -119,12 +143,12 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
 
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
-        if (job != null) {
-            //boolean notRunning = job.getState() == Job2.State.NOT_RUNNING;
-            boolean notRunning = true;
-            menu.findItem(R.id.action_pause).setVisible(!notRunning);
-            menu.findItem(R.id.action_start).setVisible(notRunning);
-        }
+        boolean loaded = job != null;
+        boolean running = loaded && job.getState() != Job.State.NOT_RUNNING;
+
+        menu.findItem(R.id.action_pause).setVisible(loaded && running);
+        menu.findItem(R.id.action_start).setVisible(loaded && !running);
+
         super.onPrepareOptionsMenu(menu);
     }
 
@@ -149,6 +173,7 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
     }
 
     private void startJob() {
+        job.setState(Job.State.RUNNING);
         /*
         Context context = getContext();
         if (!job.start(context))
@@ -161,7 +186,6 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
 
     private void removeJob() {
         jobViewModel.delete(job);
-        goBack();
     }
 
     @Override
@@ -195,9 +219,11 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
                 break;
 
             case R.id.job_details_hash_info:
+                Log.d("onViewClick", "---> job_details_hash_info");
                 //if (copyToClipboard("hashcat", HashCat.makeHash(job)))
                 //    Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
                 break;
+
             default:
                 Toast.makeText(getContext(), R.string.not_implemented_yet, Toast.LENGTH_SHORT).show();
                 break;
@@ -247,7 +273,9 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
             wordListViewModel.insert(wordList);
 
             // Update current job and the view
-            //job.setWordList(wordList);
+            job.setWordList(uri);
+            jobViewModel.update(job);
+
             ((TextView) requireView().findViewById(
                     R.id.job_details_wordlist)).setText(wordList.getFileName());
         }

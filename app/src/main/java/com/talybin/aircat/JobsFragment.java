@@ -114,9 +114,12 @@ public class JobsFragment extends Fragment
         int position = holder.getAdapterPosition();
         if (actionMode == null) {
             // Show details
-            Bundle args = new Bundle();
-            args.putInt("job_position", position);
-            navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment, args);
+            Job job = jobViewModel.get(position);
+            if (job != null) {
+                Bundle args = new Bundle();
+                args.putString(JobDetailsFragment.KEY_JOB_ID, job.getPmkId());
+                navController.navigate(R.id.action_JobsFragment_to_jobDetailsFragment, args);
+            }
         }
         else // We are in multi-selection mode, do the same as onItemLongClick
             toggleSelection(position);
@@ -178,7 +181,6 @@ public class JobsFragment extends Fragment
                             .map(idx -> jobViewModel.get(idx))
                             .forEach(jobViewModel::delete);
                 }
-                // Selections in adapter will be cleared in finish()
                 actionMode.finish();
                 return true;
 
@@ -192,7 +194,6 @@ public class JobsFragment extends Fragment
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
-        adapter.clearSelections();
         createJobBut.setVisibility(View.VISIBLE);
         actionMode = null;
     }
