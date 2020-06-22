@@ -1,10 +1,8 @@
 package com.talybin.aircat;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.room.PrimaryKey;
 import androidx.transition.ChangeBounds;
 import androidx.transition.TransitionManager;
 
@@ -16,19 +14,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,12 +29,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NewJobActivity extends AppCompatActivity implements ApListAdapter.ClickListener {
 
@@ -162,9 +149,16 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
     }
 
     private Process fetchEapol(ApInfo apInfo, EapolListener callback) {
+        String[] args = {
+                "su",  "-c", getFilesDir() + "/tcpdump/tcpdump",
+                "-i", Utils.getWirelessInterface(),
+                "-c", "1",      // Read one packet
+                "-s", "200",    // Set snaplen size to 200, EAPOL is just below this
+                "-entqx",       // Dump payload as hex
+                "\"ether proto 0x888e and ether[0x15:2] > 0\"", // Listen to EAPOL that has PMKID
+        };
         try {
-            Process process = Runtime.getRuntime().exec(
-                    "su -c " + getFilesDir() + "/tcpdump/tcpdump" + generateEapolParams());
+            Process process = Runtime.getRuntime().exec(args);
             InputStream is = process.getInputStream();
             int networkId = apInfo.connect(wifiManager);
 
@@ -196,12 +190,18 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
     @Override
     public void onClick(ApInfo apInfo) {
         ProgressDialog waitDialog = new ProgressDialog(this);
+        Handler giveUpHanlder = new Handler();
+        Utils.Holder<Runnable> giveUpTask = new Utils.Holder<>();
+        AtomicBoolean canceled = new AtomicBoolean(false);
 
         Process process = fetchEapol(apInfo, ((eapol, err) -> {
+            giveUpHanlder.removeCallbacks(giveUpTask.get());
             waitDialog.dismiss();
 
-            if (err != null)
-                Toast.makeText(this, err, Toast.LENGTH_LONG).show();
+            if (err != null) {
+                if (!canceled.get())
+                    Toast.makeText(this, err, Toast.LENGTH_LONG).show();
+            }
             else {
                 Intent replyIntent = new Intent();
 
@@ -216,6 +216,18 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
         }));
 
         if (process != null) {
+            Runnable cancel = () -> {
+                canceled.set(true);
+                process.destroy();
+            };
+            // Give up after some amount of time
+            giveUpTask.set(() -> {
+                cancel.run();
+                Toast.makeText(this, getString(R.string.no_answer, apInfo.getSSID()), Toast.LENGTH_LONG).show();
+            });
+            giveUpHanlder.postDelayed(giveUpTask.get(), 10000);
+
+            // Show wait dialog
             waitDialog.setTitle(apInfo.getSSID());
             waitDialog.setMessage(getString(R.string.getting_pmkid));
             waitDialog.setCancelable(false);
@@ -223,21 +235,9 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
             waitDialog.setButton(
                     DialogInterface.BUTTON_NEGATIVE,
                     getString(android.R.string.cancel),
-                    (dialog, which) -> process.destroy());
+                    (dialog, which) -> cancel.run());
 
             waitDialog.show();
         }
-    }
-
-    private static String generateEapolParams() {
-        // Listen to EAPOL that has PMKID
-        final String filter = " \"ether proto 0x888e and ether[0x15:2] > 0\"";
-
-        // Defining a String which will contain the parameters.
-        return  " -i " + Utils.getWirelessInterface()  // Recognizing the chosen interface
-                + " -c 1"       // Read one packet
-                + " -s 200"     // Set snaplen size to 200, EAPOL is just below this
-                + " -entqx"     // Dump payload as hex
-                + filter;
     }
 }

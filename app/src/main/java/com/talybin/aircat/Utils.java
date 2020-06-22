@@ -24,6 +24,24 @@ public class Utils {
     // Cached wireless interface name
     private static String wirelessInterface = null;
 
+    // A value holder
+    public static class Holder<T> {
+        private T value = null;
+
+        Holder() {}
+        Holder(T value) {
+            this.value = value;
+        }
+
+        T get() {
+            return value;
+        }
+
+        void set(T value) {
+            this.value = value;
+        }
+    }
+
     // Extract files from zipped raw resource file to specified directory
     public static boolean unpackRawZip(int resourceId, String destDir, String[] executables)
     {
