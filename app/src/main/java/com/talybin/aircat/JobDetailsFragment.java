@@ -31,14 +31,11 @@ import static android.app.Activity.RESULT_OK;
 
 public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
-    public static final String KEY_JOB_ID = "job_id";
+    static final String KEY_JOB_ID = "job_id";
 
     private static final int FILE_SELECT_CODE = 0;
 
     private BottomSheetDialog bottomDialog;
-
-    private JobViewModel jobViewModel;
-    private WordListViewModel wordListViewModel;
 
     private Job job = null;
 
@@ -59,10 +56,6 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        ViewModelProvider modelProvider = new ViewModelProvider(this);
-        jobViewModel = modelProvider.get(JobViewModel.class);
-        wordListViewModel = modelProvider.get(WordListViewModel.class);
-
         // Retrieve the job
         String key = null;
         Bundle args = getArguments();
@@ -75,17 +68,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         }
 
         // Wait for job to be loaded
-        String finalKey = key;
-        jobViewModel.getAll().observe(getViewLifecycleOwner(), jobs -> {
-            Log.d("onViewCreated", "---> observe");
-            for (Job j : jobs) {
-                if (j.getPmkId().equals(finalKey)) {
-                    setJob(j);
-                    return;
-                }
-            }
-            goBack();
-        });
+        App.repo().getJob(key).observe(getViewLifecycleOwner(), this::setJob);
 
         // Alternatives for recovered password
         bottomDialog = new BottomSheetDialog(requireContext());
@@ -99,13 +82,17 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
             View v = Objects.requireNonNull(bottomDialog.findViewById(id));
             v.setOnClickListener(this::onViewClick);
         }
-
-        //job.addListener(this);
     }
 
     private void setJob(Job job) {
-        this.job = job;
 
+        if (job == null) {
+            // Job not found or deleted
+            goBack();
+            return;
+        }
+
+        this.job = job;
         View view = requireView();
 
         View jobItem = view.findViewById(R.id.job_details_item);
@@ -128,7 +115,6 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
     @Override
     public void onDestroyView() {
-        //job.removeListener(this);
         job = null;
         bottomDialog = null;
 
@@ -183,7 +169,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
     private void removeJob() {
         job.stop();
-        jobViewModel.delete(job);
+        App.repo().delete(job);
     }
 
 
@@ -266,11 +252,10 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         Uri uri = data.getData();
         if (uri != null) {
             WordList wordList = new WordList(uri);
-            wordListViewModel.insert(wordList);
+            App.repo().insert(wordList);
 
             // Update current job and the view
             job.setWordList(uri);
-            jobViewModel.update(job);
 
             ((TextView) requireView().findViewById(
                     R.id.job_details_wordlist)).setText(wordList.getFileName());

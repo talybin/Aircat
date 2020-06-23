@@ -24,8 +24,8 @@ public interface JobDao {
     @Query("DELETE FROM job_table")
     void deleteAll();
 
-    //@Query("SELECT * FROM job_table WHERE pmkid = :id")
-    //LiveData<Job> get(String id);
+    @Query("SELECT * FROM job_table WHERE pmkid = :id")
+    LiveData<Job> get(String id);
 
     @Query("SELECT * FROM job_table")
     LiveData<List<Job>> getJobs();

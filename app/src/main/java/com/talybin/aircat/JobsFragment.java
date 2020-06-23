@@ -16,7 +16,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -25,9 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -40,8 +37,6 @@ public class JobsFragment extends Fragment
     private FloatingActionButton createJobBut;
 
     private NavController navController;
-
-    private JobViewModel jobViewModel;
 
     private androidx.appcompat.view.ActionMode actionMode = null;
 
@@ -70,8 +65,7 @@ public class JobsFragment extends Fragment
         adapter = new JobListAdapter(this);
         jobList.setAdapter(adapter);
 
-        jobViewModel = new ViewModelProvider(this).get(JobViewModel.class);
-        jobViewModel.getAll().observe(getViewLifecycleOwner(), jobs -> {
+        App.repo().getAllJobs().observe(getViewLifecycleOwner(), jobs -> {
             // Update the cached copy of the jobs in the adapter.
             adapter.setJobs(jobs);
         });
@@ -104,7 +98,7 @@ public class JobsFragment extends Fragment
             String clMac = data.getStringExtra(NewJobActivity.EXTRA_CLIENT_MAC);
 
             if (pmkId != null && apMac != null && clMac != null) {
-                jobViewModel.insert(new Job(
+                App.repo().insert(new Job(
                         pmkId, ssid, apMac, clMac, WordList.getDefault(), null));
             }
             else
@@ -117,7 +111,7 @@ public class JobsFragment extends Fragment
         int position = holder.getAdapterPosition();
         if (actionMode == null) {
             // Show details
-            Job job = jobViewModel.get(position);
+            Job job = adapter.getJobs().get(position);
             if (job != null) {
                 Bundle args = new Bundle();
                 args.putString(JobDetailsFragment.KEY_JOB_ID, job.getPmkId());
@@ -175,22 +169,23 @@ public class JobsFragment extends Fragment
         switch (item.getItemId()) {
 
             case R.id.action_remove:
+                List<Job> allJobs = adapter.getJobs();
                 List<Job> selected = adapter.getSelectedItems()
-                        .stream().map(jobViewModel::get).collect(Collectors.toList());
+                        .stream().map(allJobs::get).collect(Collectors.toList());
 
                 // Stop any running job
                 selected.forEach(Job::stop);
 
-                if (selected.size() == jobViewModel.getSize())
-                    jobViewModel.deleteAll();
+                if (selected.size() == allJobs.size())
+                    App.repo().deleteAllJobs();
                 else
-                    selected.forEach(jobViewModel::delete);
+                    selected.forEach(App.repo()::delete);
 
                 actionMode.finish();
                 return true;
 
             case R.id.action_select_all:
-                adapter.selectRange(0, jobViewModel.getSize());
+                adapter.selectRange(0, adapter.getJobs().size());
                 updateActionModeTitle();
                 return true;
         }

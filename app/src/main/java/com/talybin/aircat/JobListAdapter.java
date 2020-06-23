@@ -164,6 +164,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         notifyDataSetChanged();
     }
 
+    List<Job> getJobs() {
+        return this.jobs;
+    }
+
     void toggleSelection(int pos) {
         if (selectedItems.contains(pos))
             selectedItems.remove(pos);

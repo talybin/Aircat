@@ -14,7 +14,7 @@ class AircatRepository {
 
     private WordListDao wordListDao;
     private JobDao jobDao;
-    private LiveData<List<Job>> allJobs;
+    //private LiveData<List<Job>> allJobs;
 
     // Note that in order to unit test the AircatRepository, you have to remove the Application
     // dependency. This adds complexity and much more code, and this sample is not about testing.
@@ -24,13 +24,17 @@ class AircatRepository {
         AircatRoomDatabase db = AircatRoomDatabase.getDatabase(application);
         wordListDao = db.wordListDao();
         jobDao = db.jobDao();
-        allJobs = jobDao.getJobs();
+        //allJobs = jobDao.getJobs();
     }
 
     // Room executes all queries on a separate thread.
     // Observed LiveData will notify the observer when the data has changed.
     LiveData<List<Job>> getAllJobs() {
-        return allJobs;
+        return jobDao.getJobs();
+    }
+
+    LiveData<Job> getJob(String id) {
+        return jobDao.get(id);
     }
 
     void deleteAllJobs() {

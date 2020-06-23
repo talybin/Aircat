@@ -127,6 +127,7 @@ public class Job {
 
     void setWordList(@Nullable Uri uri) {
         wordList = uri;
+        writeChanges();
     }
 
     @Nullable
