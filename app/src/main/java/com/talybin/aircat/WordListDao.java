@@ -1,9 +1,13 @@
 package com.talybin.aircat;
 
+import android.net.Uri;
+
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.TypeConverters;
 
 import java.util.List;
 
@@ -19,8 +23,9 @@ public interface WordListDao {
     void deleteAll();
 
     @Query("SELECT * FROM wordlist_table")
-    List<WordList> getWordLists();
+    LiveData<List<WordList>> getWordLists();
 
-    //@Query("SELECT * FROM wordlist_table WHERE uri = ':uri'")
-    //WordList getWordList(Uri uri);
+    @TypeConverters(UriConverter.class)
+    @Query("SELECT * FROM wordlist_table WHERE uri = :uri")
+    LiveData<WordList> get(Uri uri);
 }

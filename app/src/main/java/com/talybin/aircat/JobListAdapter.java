@@ -74,6 +74,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             float percentComplete = 0;
             long estimated = -1;
 
+            // While it is running
             if (progress != null && progress.state == 3) {
                 speed.setText(context.getString(R.string.cracking_speed, progress.speed));
                 if (progress.total > 0) {

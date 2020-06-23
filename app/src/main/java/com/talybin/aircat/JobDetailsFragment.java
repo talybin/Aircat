@@ -103,7 +103,13 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
         ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
         ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getPmkId());
-        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getPath());
+        //((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getPath());
+
+        // TODO remove me (just a test)
+        App.repo().getWordList(job.getWordList()).observe(getViewLifecycleOwner(), wordList -> {
+            TextView v = requireView().findViewById(R.id.job_details_wordlist);
+            v.setText(wordList.getFileName() + " (" + wordList.getNrWords() + " words)");
+        });
 
         // Click listeners
         jobItem.setOnClickListener(v -> showBottomMenu());
@@ -251,14 +257,11 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
         Uri uri = data.getData();
         if (uri != null) {
-            WordList wordList = new WordList(uri);
-            App.repo().insert(wordList);
+            //WordList wordList = new WordList(uri);
+            App.repo().insert(new WordList(uri));
 
-            // Update current job and the view
+            // Update current job and the view (setJob will be called)
             job.setWordList(uri);
-
-            ((TextView) requireView().findViewById(
-                    R.id.job_details_wordlist)).setText(wordList.getFileName());
         }
     }
 }
