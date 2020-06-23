@@ -106,10 +106,11 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         //((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getPath());
 
         // TODO remove me (just a test)
-        App.repo().getWordList(job.getWordList()).observe(getViewLifecycleOwner(), wordList -> {
-            TextView v = requireView().findViewById(R.id.job_details_wordlist);
-            v.setText(wordList.getFileName() + " (" + wordList.getNrWords() + " words)");
-        });
+        WordList wordList = WordListManager.getInstance().get(job.getWordList());
+        //App.repo().getWordList(job.getWordList()).observe(getViewLifecycleOwner(), wordList -> {
+            TextView tv = requireView().findViewById(R.id.job_details_wordlist);
+            tv.setText(wordList.getFileName() + " (" + wordList.getNrWords() + " words)");
+        //});
 
         // Click listeners
         jobItem.setOnClickListener(v -> showBottomMenu());

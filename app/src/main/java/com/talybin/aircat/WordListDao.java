@@ -19,13 +19,13 @@ public interface WordListDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     void insert(WordList wordList);
 
-    @Query("DELETE FROM wordlist_table")
-    void deleteAll();
+    //@Query("DELETE FROM wordlist_table")
+    //void deleteAll();
 
     @Query("SELECT * FROM wordlist_table")
-    LiveData<List<WordList>> getWordLists();
+    List<WordList> getWordLists();
 
-    @TypeConverters(UriConverter.class)
-    @Query("SELECT * FROM wordlist_table WHERE uri = :uri")
-    LiveData<WordList> get(Uri uri);
+    //@TypeConverters(UriConverter.class)
+    //@Query("SELECT * FROM wordlist_table WHERE uri = :uri")
+    //LiveData<WordList> get(Uri uri);
 }

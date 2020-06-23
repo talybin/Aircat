@@ -161,12 +161,17 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     void setJobs(List<Job> jobs) {
         this.jobs = jobs;
-        clearSelections();
-        notifyDataSetChanged();
+        //clearSelections();
+        //notifyDataSetChanged();
     }
 
     List<Job> getJobs() {
         return this.jobs;
+    }
+
+    void rereadData() {
+        clearSelections();
+        notifyDataSetChanged();
     }
 
     void toggleSelection(int pos) {

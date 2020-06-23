@@ -28,7 +28,7 @@ public interface JobDao {
     LiveData<Job> get(String id);
 
     @Query("SELECT * FROM job_table")
-    LiveData<List<Job>> getJobs();
+    List<Job> getJobs();
 
     @Update
     void update(Job job);

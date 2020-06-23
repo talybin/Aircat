@@ -38,7 +38,9 @@ public class JobsFragment extends Fragment
 
     private NavController navController;
 
-    private androidx.appcompat.view.ActionMode actionMode = null;
+    private ActionMode actionMode = null;
+
+    private JobManager jobManager;
 
     @Override
     public View onCreateView(
@@ -55,6 +57,8 @@ public class JobsFragment extends Fragment
         Context ctx = requireContext();
         navController = NavHostFragment.findNavController(JobsFragment.this);
 
+        jobManager = JobManager.getInstance();
+
         // Job list
         RecyclerView jobList = view.findViewById(R.id.job_list);
         jobList.setLayoutManager(new LinearLayoutManager(ctx));
@@ -65,10 +69,7 @@ public class JobsFragment extends Fragment
         adapter = new JobListAdapter(this);
         jobList.setAdapter(adapter);
 
-        App.repo().getAllJobs().observe(getViewLifecycleOwner(), jobs -> {
-            // Update the cached copy of the jobs in the adapter.
-            adapter.setJobs(jobs);
-        });
+        jobManager.getAll(adapter::setJobs);
 
         // Create new job button
         createJobBut = view.findViewById(R.id.createNewJobBut);
@@ -98,8 +99,10 @@ public class JobsFragment extends Fragment
             String clMac = data.getStringExtra(NewJobActivity.EXTRA_CLIENT_MAC);
 
             if (pmkId != null && apMac != null && clMac != null) {
-                App.repo().insert(new Job(
+                int position = jobManager.add(new Job(
                         pmkId, ssid, apMac, clMac, WordList.getDefault(), null));
+                if (position >= 0)
+                    adapter.notifyItemInserted(position);
             }
             else
                 Toast.makeText(getContext(), R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
@@ -177,9 +180,11 @@ public class JobsFragment extends Fragment
                 selected.forEach(Job::stop);
 
                 if (selected.size() == allJobs.size())
-                    App.repo().deleteAllJobs();
-                else
-                    selected.forEach(App.repo()::delete);
+                    jobManager.deleteAll();
+                else // TODO sort before or invert selected
+                    selected.forEach(jobManager::delete);
+
+                adapter.notifyDataSetChanged();
 
                 actionMode.finish();
                 return true;
