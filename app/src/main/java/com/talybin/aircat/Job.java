@@ -2,6 +2,7 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -135,6 +136,7 @@ public class Job {
 
     void setPassword(@Nullable String password) {
         this.password = password;
+        writeChanges();
     }
 
     @Nullable
@@ -188,5 +190,9 @@ public class Job {
         if (hashCat != null)
             hashCat.abort();
         // hashCat will be set to null on NOT_RUNNING state
+    }
+
+    void writeChanges() {
+        App.repo().update(this);
     }
 }

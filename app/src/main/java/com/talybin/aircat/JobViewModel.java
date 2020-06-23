@@ -61,7 +61,8 @@ public class JobViewModel extends AndroidViewModel {
         return allJobs.getValue() != null ? allJobs.getValue().size() : 0;
     }
 
-    @Nullable Job get(int index) {
+    @Nullable
+    Job get(int index) {
         return allJobs.getValue() != null ? allJobs.getValue().get(index) : null;
     }
 

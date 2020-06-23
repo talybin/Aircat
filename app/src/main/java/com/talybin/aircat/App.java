@@ -8,6 +8,7 @@ import android.content.Context;
 public class App extends Application {
 
     private static Context context;
+    private static AircatRepository repository = null;
 
     @Override
     public void onCreate() {
@@ -17,5 +18,11 @@ public class App extends Application {
 
     public static Context getContext() {
         return context;
+    }
+
+    public static AircatRepository repo() {
+        if (repository == null)
+            repository = new AircatRepository((Application)context);
+        return repository;
     }
 }
