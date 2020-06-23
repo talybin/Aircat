@@ -4,11 +4,10 @@ import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -25,11 +24,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class HashCat extends Thread implements Handler.Callback {
+public class HashCat extends Thread {
 
     private Handler handler = null;
     private Listener listener = null;
-    private Job2 job = null;
+    private Job job = null;
     private Process process = null;
     private ContentResolver contentResolver = null;
 
@@ -37,14 +36,8 @@ public class HashCat extends Thread implements Handler.Callback {
     private File workingDir = null;
     private Progress progress = new Progress();
 
-    // Handler messages
-    private static final int MSG_ERROR = 1;
-    private static final int MSG_SET_STATE = 2;
-    private static final int MSG_SET_PROGRESS = 3;
-    private static final int MSG_SET_PASSWORD = 4;
-
     // Return working directory of hashcat
-    public static String getWorkingDir(Context context) {
+    private static String getWorkingDir(Context context) {
         return context.getFilesDir().getPath() + "/hashcat";
     }
 
@@ -82,32 +75,17 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     public interface Listener {
-        void onHashCatError(HashCat instance, Exception ex);
-    }
-
-    // Default listener used when no listener given
-    private static class DefaultListener implements Listener {
-
-        private Context context;
-
-        DefaultListener(Context context) {
-            this.context = context;
-        }
-
-        @Override
-        public void onHashCatError(HashCat instance, Exception ex) {
-            Toast.makeText(context, ex.getMessage(), Toast.LENGTH_LONG).show();
-        }
+        void onProgress(Progress progress, Exception ex);
     }
 
     // Constructor
-    public HashCat(Context context, Job2 job, Listener listener) {
+    HashCat(@NonNull Context context, @NonNull Job job, @Nullable Listener listener) {
         super();
 
         this.job = job;
-        this.listener = listener != null ? listener : new DefaultListener(context);
+        this.listener = listener;
         this.workingDir = Paths.get(getWorkingDir(context)).toFile();
-        this.handler = new Handler(this);
+        this.handler = new Handler();
 
         this.contentResolver = context.getContentResolver();
 
@@ -115,32 +93,17 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     // Constructor
-    public HashCat(Context context, Job2 job) {
+    public HashCat(@NonNull Context context, @NonNull Job job) {
         this(context, job, null);
     }
 
-    // Destructor
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-        super.finalize();
-    }
-
-    // Clean up
-    private void close() {
-        if (hashFile != null) {
-            hashFile.delete();
-            hashFile = null;
-        }
-    }
-
     // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
-    public static String makeHash(Job2 job) {
+    public static String makeHash(Job job) {
         return String.format("%s*%s*%s*%s",
-                job.getHash(),
+                job.getPmkId(),
                 job.getApMac().replace(":", ""),
                 job.getClientMac().replace(":", ""),
-                Utils.toHexSequence(job.getSSID()));
+                Utils.toHexSequence(job.getSsid() != null ? job.getSsid() : ""));
     }
 
     // Create hash file containing the hash to be cracked
@@ -148,47 +111,20 @@ public class HashCat extends Thread implements Handler.Callback {
         BufferedWriter bufferedWriter = null;
         try {
             hashFile = File.createTempFile("hashcat-", ".hash");
+            hashFile.deleteOnExit();
             // Store hash
             bufferedWriter = new BufferedWriter(new FileWriter(hashFile));
             bufferedWriter.write(makeHash(job));
         }
         catch (IOException e) {
             e.printStackTrace();
-            listener.onHashCatError(this, e);
-            close();
+            listener.onProgress(null, e);
+            //close();
         }
         finally {
             if (bufferedWriter != null)
                 try { bufferedWriter.close();  } catch (IOException ignored) {}
         }
-    }
-
-    // Post message to handler
-    private void notifyHandler(int what, Object data) {
-        handler.sendMessage(handler.obtainMessage(what, data));
-    }
-
-    // Message queue handler
-    public boolean handleMessage(Message msg) {
-        Log.d("HashCat", "---> Got message: " + msg.what);
-        switch (msg.what) {
-            case HashCat.MSG_SET_STATE:
-                job.setState((Job2.State)msg.obj);
-                break;
-
-            case HashCat.MSG_SET_PROGRESS:
-                job.setProgress((Progress)msg.obj);
-                break;
-
-            case HashCat.MSG_SET_PASSWORD:
-                job.setPassword((String)msg.obj);
-                break;
-
-            case HashCat.MSG_ERROR:
-                listener.onHashCatError(this, (Exception)msg.obj);
-                break;
-        }
-        return true;
     }
 
     private Thread pipeStream(InputStream is, OutputStream os) {
@@ -203,7 +139,6 @@ public class HashCat extends Thread implements Handler.Callback {
                 }
                 catch (IOException e) {
                     Log.d("pipeStream", "exception: " + e.getMessage());
-                    //notifyHandler(MSG_ERROR, e);
                 }
                 finally {
                     try { is.close(); } catch (IOException ignored) {}
@@ -226,14 +161,26 @@ public class HashCat extends Thread implements Handler.Callback {
         };
     }
 
+    private void setState(Job.State state) {
+        handler.post(() -> job.setState(state));
+    }
+
+    private void setProgress(Progress progress) {
+        handler.post(() -> listener.onProgress(progress, null));
+    }
+
+    private void setError(Exception ex) {
+        handler.post(() -> listener.onProgress(null, ex));
+    }
+
     // Execute hashcat session
     @Override
     public void run() {
         if (hashFile == null)
             return;
 
-        notifyHandler(MSG_SET_PROGRESS, null);
-        notifyHandler(MSG_SET_STATE, Job2.State.STARTING);
+        setProgress(null);
+        setState(Job.State.STARTING);
 
         InputStreamReader outStream = null;
         InputStreamReader errStream = null;
@@ -267,7 +214,7 @@ public class HashCat extends Thread implements Handler.Callback {
             errStream = new InputStreamReader(process.getErrorStream());
             scanner = new Scanner(outStream);
 
-            pipeStream(contentResolver.openInputStream(job.getWordList().getUri()),
+            pipeStream(contentResolver.openInputStream(job.getWordList()),
                        process.getOutputStream()).start();
 
             // TODO this should be done once (1 & 2). Utils method? running as soon as added if not exist in file
@@ -275,7 +222,7 @@ public class HashCat extends Thread implements Handler.Callback {
             // 2. Calculate if not found
             // 3. Update file here if number of runned rows greater than from file (no executor needed)
             Future<Long> nrRows = executor.submit(
-                    countRows(contentResolver.openInputStream(job.getWordList().getUri())));
+                    countRows(contentResolver.openInputStream(job.getWordList())));
 
             while (scanner.hasNext()) {
                 //String line = scanner.nextLine();
@@ -285,7 +232,9 @@ public class HashCat extends Thread implements Handler.Callback {
 
                 if (token.startsWith(apMac)) {
                     // Password line as "<ap mac>:<client mac>:<ssid>:<password>"
-                    notifyHandler(MSG_SET_PASSWORD, token.substring(token.lastIndexOf(':') + 1));
+                    handler.post(() -> {
+                        job.setPassword(token.substring(token.lastIndexOf(':') + 1));
+                    });
                     continue;
                 }
 
@@ -303,14 +252,14 @@ public class HashCat extends Thread implements Handler.Callback {
                         // Send status
                         if (progress.nr_complete == 0) {
                             //progress.total = scanner.nextLong();
-                            notifyHandler(MSG_SET_STATE, Job2.State.RUNNING);
+                            setState(Job.State.RUNNING);
                         }
                         if (progress.total == 0 && nrRows.isDone()) {
                             progress.total = nrRows.get();
                             Log.d("hashcat", "---> nr rows: " + progress.total);
                         }
 
-                        notifyHandler(MSG_SET_PROGRESS, progress);
+                        setProgress(progress);
                         break;
                 }
             }
@@ -327,11 +276,11 @@ public class HashCat extends Thread implements Handler.Callback {
                 throw new Exception(sb.toString());
             }
 
-            notifyHandler(MSG_SET_STATE, Job2.State.NOT_RUNNING);
+            setState(Job.State.NOT_RUNNING);
         }
         catch (Exception e) {
             e.printStackTrace();
-            notifyHandler(MSG_ERROR, e);
+            setError(e);
             abort();
         }
         finally {
@@ -347,16 +296,16 @@ public class HashCat extends Thread implements Handler.Callback {
     }
 
     // Call this instead of interrupt()
-    public void abort() {
+    void abort() {
         if (process != null) {
             if (process.isAlive()) {
-                notifyHandler(MSG_SET_STATE, Job2.State.STOPPING);
+                setState(Job.State.STOPPING);
                 // TODO send 'q' instead, join(a couple of secs) and destroy
                 process.destroy();
                 try { join(); } catch (InterruptedException ignored) {}
             }
             process = null;
-            notifyHandler(MSG_SET_STATE, Job2.State.NOT_RUNNING);
+            setState(Job.State.NOT_RUNNING);
         }
     }
 }

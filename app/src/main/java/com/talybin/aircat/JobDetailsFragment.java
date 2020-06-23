@@ -29,7 +29,7 @@ import java.util.Objects;
 import static android.app.Activity.RESULT_OK;
 
 
-public class JobDetailsFragment extends Fragment implements Job2.Listener {
+public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
     public static final String KEY_JOB_ID = "job_id";
 
@@ -173,28 +173,24 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
     }
 
     private void startJob() {
-        job.setState(Job.State.RUNNING);
-        /*
         Context context = getContext();
         if (!job.start(context))
             Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
-         */
     }
 
     private void pauseJob() {
     }
 
     private void removeJob() {
+        job.stop();
         jobViewModel.delete(job);
     }
 
-    @Override
-    public void onJobStateChange(Job2 job) {
-        requireActivity().invalidateOptionsMenu();
-    }
 
     @Override
-    public void onHashCatProgressChange(Job2 job, HashCat.Progress progress) {}
+    public void onStateChange(Job job) {
+        requireActivity().invalidateOptionsMenu();
+    }
 
     private void showBottomMenu() {
         // This menu is for actions on retrieved password
@@ -220,8 +216,8 @@ public class JobDetailsFragment extends Fragment implements Job2.Listener {
 
             case R.id.job_details_hash_info:
                 Log.d("onViewClick", "---> job_details_hash_info");
-                //if (copyToClipboard("hashcat", HashCat.makeHash(job)))
-                //    Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
+                if (copyToClipboard("hashcat", HashCat.makeHash(job)))
+                    Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
                 break;
 
             default:

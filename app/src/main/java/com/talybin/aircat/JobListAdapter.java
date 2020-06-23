@@ -1,10 +1,13 @@
 package com.talybin.aircat;
 
+import android.content.Context;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -20,8 +23,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         boolean onItemLongClick(JobViewHolder holder);
     }
 
-    static class JobViewHolder extends RecyclerView.ViewHolder {
-
+    static class JobViewHolder
+            extends RecyclerView.ViewHolder
+            implements Job.StateListener
+    {
         private TextView ssid;
         private TextView password;
         private TextView state;
@@ -45,9 +50,54 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         void bindData(Job job) {
             ssid.setText(job.getSsid());
 
-            job.setListener(() -> {
-                state.setText(job.getState().toString());
+            job.setStateListener(this);
+            job.setProgressListener((progress, ex) -> {
+                if (ex != null)
+                    Toast.makeText(itemView.getContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
+                else
+                    onProgress(job);
             });
+
+            onStateChange(job);
+            onProgress(job);
+        }
+
+        @Override
+        public void onStateChange(Job job) {
+            state.setText(job.getState().toString());
+        }
+
+        private void onProgress(Job job) {
+            HashCat.Progress progress = job.getProgress();
+            Context context = itemView.getContext();
+
+            float percentComplete = 0;
+            long estimated = -1;
+
+            if (progress != null) {
+                speed.setText(context.getString(R.string.cracking_speed, progress.speed));
+                if (progress.total > 0) {
+                    percentComplete = progress.nr_complete * 100.f / progress.total;
+                    if (progress.speed > 0)
+                        estimated = (progress.total - progress.nr_complete) / progress.speed;
+                }
+            }
+            else {
+                speed.setText(context.getString(R.string.cracking_speed, 0));
+            }
+            complete.setText(context.getString(R.string.complete_percent, percentComplete));
+            progressBar.setProgress(Math.round(percentComplete), true);
+
+            estTime.setText(context.getString(R.string.estimated_time, estimated >= 0 ?
+                    DateUtils.formatElapsedTime(estimated) : context.getString(android.R.string.unknownName)));
+
+            String pw = job.getPassword();
+            if (pw != null) {
+                password.setText(pw);
+                password.setVisibility(View.VISIBLE);
+            }
+            else
+                password.setVisibility(View.GONE);
         }
     }
 

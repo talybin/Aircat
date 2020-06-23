@@ -27,7 +27,7 @@ public class Eapol {
         return fromStream(new InputStreamReader(is));
     }
 
-    public static Eapol fromStream(InputStreamReader irs) {
+    static Eapol fromStream(InputStreamReader irs) {
 
         Eapol info = new Eapol();
         Scanner scanner = new Scanner(irs);

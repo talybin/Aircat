@@ -24,7 +24,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -172,15 +175,17 @@ public class JobsFragment extends Fragment
         switch (item.getItemId()) {
 
             case R.id.action_remove:
-                Set<Integer> items = adapter.getSelectedItems();
+                List<Job> selected = adapter.getSelectedItems()
+                        .stream().map(jobViewModel::get).collect(Collectors.toList());
 
-                if (items.size() == jobViewModel.getSize())
+                // Stop any running job
+                selected.forEach(Job::stop);
+
+                if (selected.size() == jobViewModel.getSize())
                     jobViewModel.deleteAll();
-                else {
-                    items.stream()
-                            .map(idx -> jobViewModel.get(idx))
-                            .forEach(jobViewModel::delete);
-                }
+                else
+                    selected.forEach(jobViewModel::delete);
+
                 actionMode.finish();
                 return true;
 

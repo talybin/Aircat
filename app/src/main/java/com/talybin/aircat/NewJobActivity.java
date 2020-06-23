@@ -150,7 +150,7 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
 
     private Process fetchEapol(ApInfo apInfo, EapolListener callback) {
         String[] args = {
-                "su",  "-c", getFilesDir() + "/tcpdump/tcpdump",
+                "su", "-c", getFilesDir() + "/tcpdump/tcpdump",
                 "-i", Utils.getWirelessInterface(),
                 "-c", "1",      // Read one packet
                 "-s", "200",    // Set snaplen size to 200, EAPOL is just below this
@@ -195,7 +195,8 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
         AtomicBoolean canceled = new AtomicBoolean(false);
 
         Process process = fetchEapol(apInfo, ((eapol, err) -> {
-            giveUpHanlder.removeCallbacks(giveUpTask.get());
+            if (giveUpTask.get() != null)
+                giveUpHanlder.removeCallbacks(giveUpTask.get());
             waitDialog.dismiss();
 
             if (err != null) {

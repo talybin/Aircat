@@ -40,8 +40,8 @@ public class Job {
         }
     }
 
-    public interface Listener {
-        void onStateChange();
+    public interface StateListener {
+        void onStateChange(Job job);
     }
 
     @PrimaryKey
@@ -80,7 +80,13 @@ public class Job {
     private State state = State.NOT_RUNNING;
 
     @Ignore
-    private Listener listener = null;
+    private StateListener stateListener = null;
+
+    @Ignore
+    private HashCat.Listener progressListener = null;
+
+    @Ignore
+    private HashCat hashCat = null;
 
     public Job(
             @NonNull String pmkId,
@@ -98,45 +104,89 @@ public class Job {
         this.password = password;
     }
 
+    @NonNull
     String getPmkId() {
         return pmkId;
     }
 
+    @Nullable
     String getSsid() {
         return ssid;
     }
 
+    @NonNull
     String getApMac() {
         return apMac;
     }
 
+    @NonNull
     String getClientMac() {
         return clientMac;
-    }
-
-    Uri getWordList() {
-        return wordList;
-    }
-
-    String getPassword() {
-        return password;
     }
 
     void setWordList(@Nullable Uri uri) {
         wordList = uri;
     }
 
-    State getState() {
-        return state;
+    @Nullable
+    Uri getWordList() {
+        return wordList;
+    }
+
+    void setPassword(@Nullable String password) {
+        this.password = password;
+    }
+
+    @Nullable
+    String getPassword() {
+        return password;
     }
 
     void setState(State state) {
         this.state = state;
-        if (listener != null)
-            listener.onStateChange();
+        if (state == State.NOT_RUNNING)
+            hashCat = null;
+        if (stateListener != null)
+            stateListener.onStateChange(this);
+    }
+    State getState() {
+        return state;
     }
 
-    void setListener(Listener listener) {
-        this.listener = listener;
+    @Nullable
+    HashCat.Progress getProgress() {
+        return hashCat != null ? hashCat.getProgress() : null;
+    }
+
+    void setStateListener(StateListener listener) {
+        this.stateListener = listener;
+    }
+
+    void setProgressListener(HashCat.Listener listener) {
+        this.progressListener = listener;
+    }
+
+    boolean start(Context context) {
+        if (state != Job.State.NOT_RUNNING)
+            return false;
+
+        stop();
+        // Reset password
+        password = null;
+
+        hashCat = new HashCat(context, this, (progress, ex) -> {
+            if (progressListener != null)
+                progressListener.onProgress(progress, ex);
+        });
+        hashCat.start();
+
+        return true;
+    }
+
+    // Stop hashcat job if running
+    void stop() {
+        if (hashCat != null)
+            hashCat.abort();
+        // hashCat will be set to null on NOT_RUNNING state
     }
 }
