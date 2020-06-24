@@ -21,7 +21,7 @@ class AircatRepository {
     // See the BasicSample in the android-architecture-components repository at
     // https://github.com/googlesamples
     AircatRepository(Application application) {
-        AircatRoomDatabase db = AircatRoomDatabase.getDatabase(application);
+        AppDatabase db = AppDatabase.getDatabase(application);
         wordListDao = db.wordListDao();
         jobDao = db.jobDao();
     }
@@ -41,7 +41,7 @@ class AircatRepository {
     }
 
     void deleteAllJobs() {
-        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+        AppDatabase.databaseExecutor.execute(() -> {
             jobDao.deleteAll();
         });
     }
@@ -49,25 +49,25 @@ class AircatRepository {
     void insert(WordList wordList) {
         // You must call this on a non-UI thread or your app will throw an exception. Room ensures
         // that you're not doing any long running operations on the main thread, blocking the UI.
-        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+        AppDatabase.databaseExecutor.execute(() -> {
             wordListDao.insert(wordList);
         });
     }
 
     void insert(Job job) {
-        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+        AppDatabase.databaseExecutor.execute(() -> {
             jobDao.insert(job);
         });
     }
 
     void delete(Job job) {
-        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+        AppDatabase.databaseExecutor.execute(() -> {
             jobDao.delete(job);
         });
     }
 
     void update(Job job) {
-        AircatRoomDatabase.databaseWriteExecutor.execute(() -> {
+        AppDatabase.databaseExecutor.execute(() -> {
             jobDao.update(job);
         });
     }

@@ -2,7 +2,6 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +17,7 @@ public class Job {
 
     public enum State {
         NOT_RUNNING,
+        QUEUED,
         STARTING,
         RUNNING,
         STOPPING;
@@ -29,6 +29,8 @@ public class Job {
             switch (this) {
                 case NOT_RUNNING:
                     return context.getString(R.string.not_running);
+                case QUEUED:
+                    return context.getString(R.string.queued);
                 case STARTING:
                     return context.getString(R.string.starting);
                 case RUNNING:
@@ -84,10 +86,10 @@ public class Job {
     private StateListener stateListener = null;
 
     @Ignore
-    private HashCat.Listener progressListener = null;
+    private HashCat2.Listener progressListener = null;
 
     @Ignore
-    private HashCat hashCat = null;
+    private HashCat2 hashCat = null;
 
     public Job(
             @NonNull String pmkId,
@@ -152,12 +154,23 @@ public class Job {
         if (stateListener != null)
             stateListener.onStateChange(this);
     }
+
     State getState() {
         return state;
     }
 
+    // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
+    @NonNull
+    String getHash() {
+        return String.format("%s*%s*%s*%s",
+                pmkId,
+                apMac.replace(":", ""),
+                clientMac.replace(":", ""),
+                Utils.toHexSequence(ssid != null ? ssid : ""));
+    }
+
     @Nullable
-    HashCat.Progress getProgress() {
+    HashCat2.Progress getProgress() {
         return hashCat != null ? hashCat.getProgress() : null;
     }
 
@@ -165,7 +178,7 @@ public class Job {
         this.stateListener = listener;
     }
 
-    void setProgressListener(HashCat.Listener listener) {
+    void setProgressListener(HashCat2.Listener listener) {
         this.progressListener = listener;
     }
 
@@ -177,7 +190,7 @@ public class Job {
         // Reset password
         password = null;
 
-        hashCat = new HashCat(context, this, (progress, ex) -> {
+        hashCat = new HashCat2(context, this, (progress, ex) -> {
             if (progressListener != null)
                 progressListener.onProgress(progress, ex);
         });

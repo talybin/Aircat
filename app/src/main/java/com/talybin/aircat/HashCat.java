@@ -2,12 +2,12 @@ package com.talybin.aircat;
 
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
-import android.content.Context;
+import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
+import android.widget.SimpleCursorTreeAdapter;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,38 +16,42 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class HashCat extends Thread {
+class HashCat {
 
-    private Handler handler = null;
-    private Listener listener = null;
-    private Job job = null;
-    private Process process = null;
-    private ContentResolver contentResolver = null;
+    private static HashCat instance = null;
 
-    private File hashFile = null;
-    private File workingDir = null;
-    private Progress progress = new Progress();
+    // Always same
+    private static File workingDir = null;
 
-    // Return working directory of hashcat
-    private static String getWorkingDir(Context context) {
-        return context.getFilesDir().getPath() + "/hashcat";
+    static HashCat get() {
+        if (instance == null) {
+            synchronized (HashCat.class) {
+                if (instance == null) {
+                    workingDir = Paths.get(App.getContext().getFilesDir().toString(), "hashcat").toFile();
+                    instance = new HashCat();
+                }
+            }
+        }
+        return instance;
     }
 
-    // Never null
-    Progress getProgress() {
-        return progress;
-    }
-
-    // HashCat progress
-    public static class Progress {
+    static class Progress {
         // State of the job:
         //  3 (running)
         //  5 (exhausted)
@@ -75,122 +79,88 @@ public class HashCat extends Thread {
     }
 
     public interface Listener {
-        void onProgress(Progress progress, Exception ex);
+        void onProgress(Job job, Progress progress);
     }
 
-    // Constructor
-    HashCat(@NonNull Context context, @NonNull Job job, @Nullable Listener listener) {
-        super();
+    private ExecutorService hashCatExecutor;
+    private ExecutorService poolExecutor;
 
-        this.job = job;
+    // Handler for executing events on main ui thread
+    private Handler uiHandler;
+
+    // Queued jobs
+    private Map<Uri, List<Job>> jobQueue;
+
+    private Listener listener = null;
+
+    private HashCat() {
+        // Creates an Executor that uses a single worker thread operating off
+        // an unbounded queue
+        hashCatExecutor = Executors.newSingleThreadExecutor();
+
+        // Creates a thread pool that creates new threads as needed, but will
+        // reuse previously constructed threads when they are available
+        poolExecutor = Executors.newCachedThreadPool();
+
+        uiHandler = new Handler();
+        jobQueue = new HashMap<>();
+    }
+
+    void setListener(Listener listener) {
         this.listener = listener;
-        this.workingDir = Paths.get(getWorkingDir(context)).toFile();
-        this.handler = new Handler();
-
-        this.contentResolver = context.getContentResolver();
-
-        createHashFile();
     }
 
-    // Constructor
-    public HashCat(@NonNull Context context, @NonNull Job job) {
-        this(context, job, null);
-    }
-
-    // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>
-    public static String makeHash(Job job) {
-        return String.format("%s*%s*%s*%s",
-                job.getPmkId(),
-                job.getApMac().replace(":", ""),
-                job.getClientMac().replace(":", ""),
-                Utils.toHexSequence(job.getSsid() != null ? job.getSsid() : ""));
-    }
-
-    // Create hash file containing the hash to be cracked
-    private void createHashFile() {
-        BufferedWriter bufferedWriter = null;
-        try {
-            hashFile = File.createTempFile("hashcat-", ".hash");
-            hashFile.deleteOnExit();
-            // Store hash
-            bufferedWriter = new BufferedWriter(new FileWriter(hashFile));
-            bufferedWriter.write(makeHash(job));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            listener.onProgress(null, e);
-            //close();
-        }
-        finally {
-            if (bufferedWriter != null)
-                try { bufferedWriter.close();  } catch (IOException ignored) {}
+    // Add jobs to the queue
+    void add(Job... jobs) {
+        for (Job job : jobs) {
+            List<Job> list = jobQueue.get(job.getWordList());
+            if (list == null)
+                list = jobQueue.put(job.getWordList(), new ArrayList<>());
+            list.add(job);
+            // Update the job state
+            job.setState(Job.State.QUEUED);
         }
     }
 
-    private Thread pipeStream(InputStream is, OutputStream os) {
-        return new Thread() {
-            public void run() {
-                byte[] buffer = new byte[4096];
-                int cnt;
-                try {
-                    while ((cnt = is.read(buffer)) > 0) {
-                        os.write(buffer, 0, cnt);
-                    }
-                }
-                catch (IOException e) {
-                    Log.d("pipeStream", "exception: " + e.getMessage());
-                }
-                finally {
-                    try { is.close(); } catch (IOException ignored) {}
-                    try { os.close(); } catch (IOException ignored) {}
-                }
+    // Start or queue processing with previously added or/and specified jobs
+    void start(Job... jobs) {
+        add(jobs);
+        jobQueue.forEach((uri, jobList) -> {
+            hashCatExecutor.execute(() -> processJobs(uri, jobList));
+        });
+        jobQueue.clear();
+    }
+
+    void stop(Job... jobs) {
+        for (Job job : jobs) {
+            String jobId = job.getPmkId();
+            Uri key = job.getWordList();
+
+            // First check the queue
+            List<Job> queued = jobQueue.get(key);
+            if (queued != null) {
+                List<Job> filtered = queued.stream()
+                        .filter(j -> !jobId.equals(j.getPmkId()))
+                        .collect(Collectors.toList());
+                jobQueue.replace(key, filtered);
             }
-        };
-    }
-
-    private Callable<Long> countRows(InputStream is) {
-        return () -> {
-            byte[] buffer = new byte[4096];
-            long rows = 0;
-
-            for (int cnt; (cnt = is.read(buffer)) > 0; ) {
-                for (int i = 0; i < cnt; ++i)
-                    if (buffer[i] == '\n') ++rows;
+            // If job is running not much we can do without interrupting.
+            // But if all running jobs should be stopped the hashcat should
+            // be stopped as well.
+            else {
+                // TODO
             }
-            return rows;
-        };
+        }
     }
 
-    private void setState(Job.State state) {
-        handler.post(() -> job.setState(state));
-    }
-
-    private void setProgress(Progress progress) {
-        handler.post(() -> listener.onProgress(progress, null));
-    }
-
-    private void setError(Exception ex) {
-        handler.post(() -> listener.onProgress(null, ex));
-    }
-
-    // Execute hashcat session
-    @Override
-    public void run() {
-        if (hashFile == null)
+    // Process a job group
+    private void processJobs(Uri uri, List<Job> jobs) {
+        if (jobs.isEmpty())
             return;
 
-        setProgress(null);
-        setState(Job.State.STARTING);
+        setState(jobs, Job.State.STARTING);
 
-        InputStreamReader outStream = null;
-        InputStreamReader errStream = null;
-        Scanner scanner = null;
-
-        // Password starts with AP mac address without colons
-        final String apMac = job.getApMac().replace(":", "");
-
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
+        Process process = null;
         try {
             process = Runtime.getRuntime().exec(
                     new String[] {
@@ -202,7 +172,7 @@ public class HashCat extends Thread {
                             "--machine-readable",
                             "--logfile-disable",
                             "--potfile-disable",
-                            hashFile.getPath()
+                            createHashFile(jobs).getPath()
                     },
                     // No environment variables
                     null,
@@ -210,102 +180,159 @@ public class HashCat extends Thread {
                     workingDir
             );
 
-            outStream = new InputStreamReader(process.getInputStream());
-            errStream = new InputStreamReader(process.getErrorStream());
-            scanner = new Scanner(outStream);
+            pipeStream(Utils.openInputStream(uri), process.getOutputStream());
+            parseOutput(process, uri, jobs);
 
-            pipeStream(contentResolver.openInputStream(job.getWordList()),
-                       process.getOutputStream()).start();
-
-            // TODO this should be done once (1 & 2). Utils method? running as soon as added if not exist in file
-            // 1. Read number of rows from file
-            // 2. Calculate if not found
-            // 3. Update file here if number of runned rows greater than from file (no executor needed)
-            Future<Long> nrRows = executor.submit(
-                    countRows(contentResolver.openInputStream(job.getWordList())));
-
-            while (scanner.hasNext()) {
-                //String line = scanner.nextLine();
-                //Log.d("HashCat", "---> line [" + line + "]");
-
-                String token = scanner.next();
-
-                if (token.startsWith(apMac)) {
-                    // Password line as "<ap mac>:<client mac>:<ssid>:<password>"
-                    handler.post(() -> {
-                        job.setPassword(token.substring(token.lastIndexOf(':') + 1));
-                    });
-                    continue;
-                }
-
-                switch (token) {
-                    case "STATUS":
-                        progress.state = scanner.nextInt();
-                        break;
-
-                    case "SPEED":
-                        progress.speed = scanner.nextInt();
-                        break;
-
-                    case "PROGRESS":
-                        progress.nr_complete = scanner.nextLong();
-                        // Send status
-                        if (progress.nr_complete == 0) {
-                            //progress.total = scanner.nextLong();
-                            setState(Job.State.RUNNING);
-                        }
-                        if (progress.total == 0 && nrRows.isDone()) {
-                            progress.total = nrRows.get();
-                            Log.d("hashcat", "---> nr rows: " + progress.total);
-                        }
-
-                        setProgress(progress);
-                        break;
-                }
-            }
-
-            if (!process.waitFor(1000, TimeUnit.MILLISECONDS))
-                throw new Exception("Timeout waiting hashcat to finish");
-
-            if (errStream.ready()) {
-                StringBuilder sb = new StringBuilder();
-                char[] buffer = new char[1024];
-                int length;
-                while ((length = errStream.read(buffer)) != -1)
-                    sb.append(buffer, 0, length);
-                throw new Exception(sb.toString());
-            }
-
-            setState(Job.State.NOT_RUNNING);
+            InputStream errStream = process.getErrorStream();
+            if (errStream.available() > 0)
+                throw new Exception(Utils.toString(errStream));
         }
         catch (Exception e) {
             e.printStackTrace();
-            setError(e);
-            abort();
         }
         finally {
-            if (outStream != null)
-                try { outStream.close(); } catch (IOException ignored) {}
-            if (errStream != null)
-                try { errStream.close(); } catch (IOException ignored) {}
-            if (scanner != null)
-                scanner.close();
+            if (process != null)
+                process.destroy();
 
-            executor.shutdown();
+            setState(jobs, Job.State.NOT_RUNNING);
         }
     }
 
-    // Call this instead of interrupt()
-    void abort() {
-        if (process != null) {
-            if (process.isAlive()) {
-                setState(Job.State.STOPPING);
-                // TODO send 'q' instead, join(a couple of secs) and destroy
-                process.destroy();
-                try { join(); } catch (InterruptedException ignored) {}
+    private void setState(List<Job> jobs, Job.State state) {
+        uiHandler.post(() -> jobs.forEach(job -> job.setState(state)));
+    }
+
+    private void setProgress(List<Job> jobs, Progress progress) {
+        if (listener != null)
+            uiHandler.post(() -> jobs.forEach(job -> listener.onProgress(job, progress)));
+    }
+
+    // Generate job hashes to be read by hashcat process
+    private static File createHashFile(List<Job> jobs) throws IOException {
+        File hashFile = File.createTempFile("hashcat-", ".16800");
+        hashFile.deleteOnExit();
+
+        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(hashFile))) {
+            for (Job job : jobs) {
+                bufferedWriter.write(job.getHash());
+                bufferedWriter.newLine();
             }
-            process = null;
-            setState(Job.State.NOT_RUNNING);
+        }
+        return hashFile;
+    }
+
+    // Async find word list by uri. Also updates number of words
+    // if not specified (needed for progress indication).
+    private Future<WordList> getWordList(Uri uri) {
+        return poolExecutor.submit(() -> {
+            WordList wordList = WordLists.getOrCreate(uri);
+            // Count number of words and update word list
+            if (wordList.getNrWords() == null) {
+                // Open and count number of words
+                try (InputStream is = Utils.openInputStream(uri)) {
+                    if (is != null) {
+                        byte[] buffer = new byte[4096];
+                        long rows = 0;
+
+                        for (int cnt; (cnt = is.read(buffer)) > 0; ) {
+                            for (int i = 0; i < cnt; ++i)
+                                if (buffer[i] == '\n') ++rows;
+                        }
+
+                        // Update word list
+                        wordList.setNrWords(rows);
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return wordList;
+        });
+    }
+
+    // Async copy content of one stream to another
+    private void pipeStream(InputStream src, OutputStream sink) {
+        poolExecutor.execute(() -> {
+            byte[] buffer = new byte[4096];
+            try {
+                for (int cnt; (cnt = src.read(buffer)) > 0;)
+                    sink.write(buffer, 0, cnt);
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void parseOutput(Process process, Uri uri, List<Job> jobs) {
+
+        Progress progress = new Progress();
+        InputStreamReader outStream = new InputStreamReader(process.getInputStream());
+        Scanner scanner = new Scanner(outStream);
+
+        Future<WordList> wordListFuture = getWordList(uri);
+
+        while (scanner.hasNext()) {
+            //String line = scanner.nextLine();
+            //Log.d("HashCat", "---> line [" + line + "]");
+
+            String token = scanner.next();
+
+            // Check for password line as "<ap mac>:<client mac>:<ssid>:<password>"
+            // Mac addresses encoded without colons
+            int pos = token.indexOf(':');
+            if (pos > 0) {
+                String apMac = token.substring(0, pos - 1);
+                String password = token.substring(token.lastIndexOf(':') + 1);
+                jobs.stream()
+                        .filter(j -> j.getApMac().replace(":", "").equals(apMac))
+                        .forEach(j -> uiHandler.post(() -> j.setPassword(password)));
+                Log.d("HashCat", token);
+            }
+
+            // Progress token
+            switch (token) {
+                case "STATUS":
+                    progress.state = scanner.nextInt();
+                    break;
+
+                case "SPEED":
+                    progress.speed = scanner.nextInt();
+                    break;
+
+                case "PROGRESS":
+                    progress.nr_complete = scanner.nextLong();
+                    // Update state on first progress line
+                    if (progress.nr_complete == 0)
+                        setState(jobs, Job.State.RUNNING);
+
+                    // Update total number if possible
+                    if (wordListFuture.isDone()) {
+                        try {
+                            WordList wordList = wordListFuture.get();
+                            Long cnt = wordList.getNrWords();
+
+                            // Update progress total
+                            if (progress.total == 0 && cnt != null)
+                                progress.total = cnt;
+
+                            // On exhausted state (gone thru word list but didn't find anything)
+                            // update number of words to number completed. It will be used
+                            // next time, as total number, for better precision.
+                            if (progress.state == 5 && (cnt == null || cnt != progress.nr_complete))
+                                wordList.setNrWords(progress.nr_complete);
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    // This is the last interesting token in progress line,
+                    // notify user
+                    setProgress(jobs, progress);
+                    break;
+            }
         }
     }
 }

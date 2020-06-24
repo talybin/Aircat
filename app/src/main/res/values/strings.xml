@@ -24,10 +24,14 @@
     <string name="pause">Pause</string>
     <string name="remove">Remove</string>
     <string name="connect">Connect</string>
+
+    <!-- Job states -->
     <string name="not_running">Not running</string>
+    <string name="queued">Queued</string>
     <string name="starting">Starting</string>
     <string name="running">Running</string>
     <string name="stopping">Stopping</string>
+
     <string name="password">Password</string>
     <string name="failed_to_start_job">Failed to start the job</string>
     <string name="select_all">Select all</string>

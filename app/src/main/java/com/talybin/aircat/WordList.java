@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
 import java.io.File;
+import java.io.InputStream;
 
 @Entity(tableName = "wordlist_table")
 public class WordList {

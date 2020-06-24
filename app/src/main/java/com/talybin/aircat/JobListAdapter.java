@@ -55,11 +55,11 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (ex != null)
                     Toast.makeText(itemView.getContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
                 else
-                    onProgress(job);
+                    bindProgress(job, progress);
             });
 
             onStateChange(job);
-            onProgress(job);
+            bindProgress(job, job.getProgress());
         }
 
         @Override
@@ -67,8 +67,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             state.setText(job.getState().toString());
         }
 
-        private void onProgress(Job job) {
-            HashCat.Progress progress = job.getProgress();
+        private void bindProgress(Job job, HashCat2.Progress progress) {
             Context context = itemView.getContext();
 
             float percentComplete = 0;

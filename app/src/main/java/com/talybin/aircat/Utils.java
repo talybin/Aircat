@@ -6,9 +6,12 @@ import android.os.AsyncTask;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -112,6 +115,30 @@ public class Utils {
 
         return wirelessInterface;
     }
+
+
+    static InputStream openInputStream(Uri uri) throws FileNotFoundException {
+        return App.getInstance().getContentResolver().openInputStream(uri);
+    }
+
+    static String toString(InputStream src) throws IOException {
+        InputStreamReader isr = new InputStreamReader(src);
+        StringBuilder sb = new StringBuilder();
+        char[] buffer = new char[1024];
+        int length;
+
+        while ((length = isr.read(buffer)) != -1)
+            sb.append(buffer, 0, length);
+        return sb.toString();
+    }
+
+    /*
+    static void silentClose(Closeable... objs) {
+        for (Closeable obj : objs) {
+            if (obj != null)
+                try { obj.close(); } catch (IOException ignored) {}
+        }
+    }*/
 
     // Convert string to series of ascii bytes in hex format
     public static String toHexSequence(String src) {

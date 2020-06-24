@@ -8,6 +8,7 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.TypeConverters;
+import androidx.room.Update;
 
 import java.util.List;
 
@@ -22,10 +23,17 @@ public interface WordListDao {
     @Query("DELETE FROM wordlist_table")
     void deleteAll();
 
+    @Update
+    void update(WordList wordList);
+
     @Query("SELECT * FROM wordlist_table")
     LiveData<List<WordList>> getWordLists();
 
     @TypeConverters(UriConverter.class)
     @Query("SELECT * FROM wordlist_table WHERE uri = :uri")
     LiveData<WordList> get(Uri uri);
+
+    @TypeConverters(UriConverter.class)
+    @Query("SELECT * FROM wordlist_table WHERE uri = :uri")
+    WordList getSync(Uri uri);
 }

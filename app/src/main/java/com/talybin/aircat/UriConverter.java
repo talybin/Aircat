@@ -4,7 +4,7 @@ import android.net.Uri;
 
 import androidx.room.TypeConverter;
 
-public class UriConverter {
+class UriConverter {
 
     @TypeConverter
     public static Uri toUri(String str) {

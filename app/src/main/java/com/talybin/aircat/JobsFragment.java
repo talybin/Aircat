@@ -65,10 +65,8 @@ public class JobsFragment extends Fragment
         adapter = new JobListAdapter(this);
         jobList.setAdapter(adapter);
 
-        App.repo().getAllJobs().observe(getViewLifecycleOwner(), jobs -> {
-            // Update the cached copy of the jobs in the adapter.
-            adapter.setJobs(jobs);
-        });
+        // Update the cached copy of the jobs in the adapter.
+        App.repo().getAllJobs().observe(getViewLifecycleOwner(), adapter::setJobs);
 
         // Create new job button
         createJobBut = view.findViewById(R.id.createNewJobBut);

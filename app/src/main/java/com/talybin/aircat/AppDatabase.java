@@ -12,15 +12,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Database(entities = { WordList.class, Job.class }, version = 1, exportSchema = false)
-public abstract class AircatRoomDatabase extends RoomDatabase {
+public abstract class AppDatabase extends RoomDatabase {
 
     public abstract WordListDao wordListDao();
     public abstract JobDao jobDao();
 
     private static final int NUMBER_OF_THREADS = 4;
 
-    private static volatile AircatRoomDatabase instance;
-    static final ExecutorService databaseWriteExecutor =
+    private static volatile AppDatabase instance;
+    static final ExecutorService databaseExecutor =
             Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
     private static RoomDatabase.Callback roomDatabaseCallback = new RoomDatabase.Callback() {
@@ -29,7 +29,7 @@ public abstract class AircatRoomDatabase extends RoomDatabase {
             super.onOpen(db);
 
             // Add default entries
-            databaseWriteExecutor.execute(() -> {
+            databaseExecutor.execute(() -> {
                 WordListDao dao = instance.wordListDao();
 
                 dao.insert(new WordList(WordList.getDefault()));
@@ -47,12 +47,12 @@ public abstract class AircatRoomDatabase extends RoomDatabase {
         }
     };
 
-    static AircatRoomDatabase getDatabase(final Context context) {
+    static AppDatabase getDatabase(final Context context) {
         if (instance == null) {
-            synchronized (AircatRoomDatabase.class) {
+            synchronized (AppDatabase.class) {
                 if (instance == null) {
                     instance = Room.databaseBuilder(context.getApplicationContext(),
-                            AircatRoomDatabase.class, "aircat_database")
+                            AppDatabase.class, "aircat_database")
                             .addCallback(roomDatabaseCallback)
                             .build();
                 }

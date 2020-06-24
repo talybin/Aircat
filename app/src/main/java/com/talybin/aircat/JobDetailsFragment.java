@@ -9,7 +9,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 
 import android.util.Log;
@@ -208,7 +207,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
             case R.id.job_details_hash_info:
                 Log.d("onViewClick", "---> job_details_hash_info");
-                if (copyToClipboard("hashcat", HashCat.makeHash(job)))
+                if (copyToClipboard("hashcat", HashCat2.makeHash(job)))
                     Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
                 break;
 
