@@ -2,6 +2,7 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -136,8 +137,10 @@ public class Job {
         writeChanges();
     }
 
-    @Nullable
+    @NonNull
     Uri getUri() {
+        if (uri == null)
+            uri = WordList.getDefault();
         return uri;
     }
 

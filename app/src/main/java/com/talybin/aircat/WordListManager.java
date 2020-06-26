@@ -33,7 +33,7 @@ class WordListManager {
     // On failure will create and add new word list asynchronously.
     @NonNull
     WordList getOrCreate(Uri uri) {
-        WordList wordList = wordListDao.getSync(uri);
+        WordList wordList = wordListDao.get(uri);
         if (wordList == null)
             add(wordList = new WordList(uri));
         return wordList;

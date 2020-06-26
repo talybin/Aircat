@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.room.Database;
@@ -31,18 +32,7 @@ public abstract class AppDatabase extends RoomDatabase {
             // Add default entries
             databaseExecutor.execute(() -> {
                 WordListDao dao = instance.wordListDao();
-
                 dao.insert(new WordList(WordList.getDefault()));
-
-                // Add test job
-                instance.jobDao().insert(new Job(
-                        "5265b2887ac349c4096eb7c2e4aaba61",
-                        "IterationRentalsWifi",
-                        "c4:72:95:64:51:26",
-                        "6c:c7:ec:95:3d:63",
-                        WordList.getDefault(),
-                        null
-                ));
             });
         }
     };

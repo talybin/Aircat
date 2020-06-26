@@ -101,13 +101,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
         ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
         ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getPmkId());
-        //((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getPath());
-
-        // TODO remove me (just a test)
-        WordListManager.getInstance().getOrCreate(job.getUri(), wordList -> {
-            TextView v = requireView().findViewById(R.id.job_details_wordlist);
-            v.setText(wordList.getFileName() + " (" + wordList.getNrWords() + " words)");
-        });
+        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getUri().getPath());
 
         // Click listeners
         jobItem.setOnClickListener(v -> showBottomMenu());
@@ -166,6 +160,8 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         HashCat.getInstance().start(job);
         if (job.getState() == Job.State.NOT_RUNNING)
             Toast.makeText(getContext(), R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+        else
+            requireActivity().invalidateOptionsMenu();
     }
 
     private void pauseJob() {
@@ -173,8 +169,8 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
     private void removeJob() {
         JobManager.getInstance().remove(job);
+        goBack();
     }
-
 
     @Override
     public void onStateChange(Job job) {
@@ -257,8 +253,9 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
             //WordList wordList = new WordList(uri);
             WordListManager.getInstance().add(new WordList(uri));
 
-            // Update current job and the view (setJob will be called)
+            // Update current job and the view
             job.setUri(uri);
+            setJob(job);
         }
     }
 }

@@ -6,7 +6,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 class JobManager {
@@ -46,6 +45,24 @@ class JobManager {
             jobList = jobDao.getJobs();
             uiHandler.post(this::listUpdated);
         });
+
+        // Add test job
+        add(new Job(
+                "5265b2887ac349c4096eb7c2e4aaba60",
+                "IterationRentalsWifi (no match)",
+                "c4:72:95:64:51:26",
+                "6c:c7:ec:95:3d:63",
+                WordList.getDefault(),
+                null
+        ));
+        add(new Job(
+                "5265b2887ac349c4096eb7c2e4aaba61",
+                "IterationRentalsWifi",
+                "c4:72:95:64:51:26",
+                "6c:c7:ec:95:3d:63",
+                WordList.getDefault(),
+                null
+        ));
     }
 
     private void listUpdated() {

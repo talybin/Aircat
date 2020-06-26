@@ -110,8 +110,10 @@ class HashCat {
     void add(Job... jobs) {
         for (Job job : jobs) {
             List<Job> list = jobQueue.get(job.getUri());
-            if (list == null)
-                list = jobQueue.put(job.getUri(), new ArrayList<>());
+            if (list == null) {
+                list = new ArrayList<>();
+                jobQueue.put(job.getUri(), list);
+            }
             list.add(job);
             // Update the job state
             job.setState(Job.State.QUEUED);
@@ -122,7 +124,16 @@ class HashCat {
     void start(Job... jobs) {
         add(jobs);
         jobQueue.forEach((uri, jobList) -> {
-            hashCatExecutor.execute(() -> processJobs(uri, jobList));
+            hashCatExecutor.execute(() -> {
+                processJobs(uri, jobList);
+
+                // Remove finished jobs from the queue
+                uiHandler.post(() -> {
+                    List<Job> all = jobQueue.get(uri);
+                    if (all != null)
+                        all.removeIf(jobList::contains);
+                });
+            });
         });
     }
 
@@ -156,7 +167,6 @@ class HashCat {
     // Process a job group
     private void processJobs(Uri uri, List<Job> jobs) {
         setState(jobs, Job.State.STARTING);
-
         try {
             hashCatProcess = Runtime.getRuntime().exec(
                     new String[] {
@@ -176,7 +186,10 @@ class HashCat {
                     workingDir
             );
 
-            pipeStream(Utils.openInputStream(uri), hashCatProcess.getOutputStream());
+            InputStream src = Utils.openInputStream(uri);
+            OutputStream sink = hashCatProcess.getOutputStream();
+
+            pipeStream(src, sink);
             parseOutput(hashCatProcess, uri, jobs);
 
             InputStream errStream = hashCatProcess.getErrorStream();
@@ -187,11 +200,6 @@ class HashCat {
             setError(e);
         }
         finally {
-            // Remove finished jobs from the queue
-            List<Job> jobList = jobQueue.get(uri);
-            if (jobList != null)
-                jobList.removeIf(jobs::contains);
-
             stopProcess();
             setState(jobs, Job.State.NOT_RUNNING);
         }
@@ -256,16 +264,26 @@ class HashCat {
         });
     }
 
-    // Async copy content of one stream to another
+    // Async copy content of one stream to another.
+    // Closing streams on complete.
     private void pipeStream(InputStream src, OutputStream sink) {
         poolExecutor.execute(() -> {
+            // TODO uses classes instead such as ZipStreamProvider, GZip, PlainText
             byte[] buffer = new byte[4096];
             try {
                 for (int cnt; (cnt = src.read(buffer)) > 0;)
                     sink.write(buffer, 0, cnt);
             }
             catch (IOException e) {
-                setError(e);
+                // Broken pipe is ok, just means that hashcat has ended (probably
+                // found passwords for all jobs) and sink has closed while writing.
+                // All other errors should be reported.
+                String err = e.getMessage();
+                if (err == null || !err.contains("EPIPE"))
+                    setError(e);
+            }
+            finally {
+                Utils.silentClose(sink, src);
             }
         });
     }
@@ -288,12 +306,22 @@ class HashCat {
             // Mac addresses encoded without colons
             int pos = token.indexOf(':');
             if (pos > 0) {
-                String apMac = token.substring(0, pos - 1);
-                String password = token.substring(token.lastIndexOf(':') + 1);
-                jobs.stream()
-                        .filter(j -> j.getApMac().replace(":", "").equals(apMac))
-                        .forEach(j -> uiHandler.post(() -> j.setPassword(password)));
                 Log.d("HashCat", token);
+
+                String apMac = token.substring(0, pos);
+                for (Job job : jobs) {
+                    // Encode job to output format
+                    String encJob = String.format("%s:%s:%s:",
+                            job.getApMac().replace(":", ""),
+                            job.getClientMac().replace(":", ""),
+                            job.getSsid() != null ? job.getSsid() : "");
+
+                    if (token.startsWith(encJob)) {
+                        String password = token.substring(token.lastIndexOf(':') + 1);
+                        uiHandler.post(() -> job.setPassword(password));
+                        break;
+                    }
+                }
             }
 
             // Progress token

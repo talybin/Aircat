@@ -1,7 +1,6 @@
 package com.talybin.aircat;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -19,11 +18,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
-
-import java.io.File;
-import java.lang.ref.WeakReference;
-
-import javax.xml.transform.stream.StreamSource;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -50,11 +44,14 @@ public class MainActivity extends AppCompatActivity {
             // After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         }
 
+        // Make sure both JobManager and WordListManager initialize in UI thread
+        WordListManager.getInstance();
+        JobManager.getInstance();
+
         installDependencies();
 
         HashCat.getInstance().setErrorListener(
                 err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
-
     }
 
     @Override

@@ -132,13 +132,12 @@ public class Utils {
         return sb.toString();
     }
 
-    /*
     static void silentClose(Closeable... objs) {
         for (Closeable obj : objs) {
             if (obj != null)
                 try { obj.close(); } catch (IOException ignored) {}
         }
-    }*/
+    }
 
     // Convert string to series of ascii bytes in hex format
     public static String toHexSequence(String src) {

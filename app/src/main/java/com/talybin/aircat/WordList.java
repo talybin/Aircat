@@ -48,6 +48,7 @@ public class WordList {
 
     public void setNrWords(@Nullable Long nrWords) {
         this.nrWords = nrWords;
+        writeChanges();
     }
 
     String getFileName() {
@@ -58,5 +59,9 @@ public class WordList {
     static Uri getDefault() {
         String defaultPath = App.getContext().getFilesDir() + "/wordlists/english.txt";
         return Uri.fromFile(new File(defaultPath));
+    }
+
+    private void writeChanges() {
+        WordListManager.getInstance().update(this);
     }
 }

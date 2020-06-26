@@ -187,6 +187,7 @@ public class JobsFragment extends Fragment
     @Override
     public void onDestroyActionMode(ActionMode mode) {
         createJobBut.setVisibility(View.VISIBLE);
+        adapter.clearSelections();
         actionMode = null;
     }
 }

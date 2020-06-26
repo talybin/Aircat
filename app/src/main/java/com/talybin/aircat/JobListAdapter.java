@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -72,7 +71,7 @@ public class JobListAdapter
             long estimated = -1;
 
             // While it is running
-            if (progress != null && progress.state == 3) {
+            if (progress != null) {
                 speed.setText(context.getString(R.string.cracking_speed, progress.speed));
                 if (progress.total > 0) {
                     percentComplete = progress.nr_complete * 100.f / progress.total;
