@@ -64,9 +64,10 @@ public class JobsFragment extends Fragment
         // Navigate to job details on view click
         adapter = new JobListAdapter(this);
         jobList.setAdapter(adapter);
+        adapter.setJobs(JobManager.getInstance().getAll());
 
-        // Update the cached copy of the jobs in the adapter.
-        App.repo().getAllJobs().observe(getViewLifecycleOwner(), adapter::setJobs);
+        // Setup listeners
+        JobManager.getInstance().setListener(adapter::setJobs);
 
         // Create new job button
         createJobBut = view.findViewById(R.id.createNewJobBut);
@@ -96,7 +97,7 @@ public class JobsFragment extends Fragment
             String clMac = data.getStringExtra(NewJobActivity.EXTRA_CLIENT_MAC);
 
             if (pmkId != null && apMac != null && clMac != null) {
-                App.repo().insert(new Job(
+                JobManager.getInstance().add(new Job(
                         pmkId, ssid, apMac, clMac, WordList.getDefault(), null));
             }
             else
@@ -171,14 +172,7 @@ public class JobsFragment extends Fragment
                 List<Job> selected = adapter.getSelectedItems()
                         .stream().map(allJobs::get).collect(Collectors.toList());
 
-                // Stop any running job
-                selected.forEach(Job::stop);
-
-                if (selected.size() == allJobs.size())
-                    App.repo().deleteAllJobs();
-                else
-                    selected.forEach(App.repo()::delete);
-
+                JobManager.getInstance().remove(selected);
                 actionMode.finish();
                 return true;
 

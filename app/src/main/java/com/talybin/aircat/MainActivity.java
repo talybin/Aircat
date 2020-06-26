@@ -18,6 +18,7 @@ import androidx.navigation.ui.NavigationUI;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -50,6 +51,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         installDependencies();
+
+        HashCat.getInstance().setErrorListener(
+                err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
+
     }
 
     @Override

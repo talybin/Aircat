@@ -1,11 +1,9 @@
 package com.talybin.aircat;
 
 import android.annotation.SuppressLint;
-import android.content.ContentResolver;
 import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
-import android.widget.SimpleCursorTreeAdapter;
 
 import androidx.annotation.NonNull;
 
@@ -16,21 +14,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.StringWriter;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicLong;
 
 class HashCat {
 
@@ -39,7 +33,7 @@ class HashCat {
     // Always same
     private static File workingDir = null;
 
-    static HashCat get() {
+    static HashCat getInstance() {
         if (instance == null) {
             synchronized (HashCat.class) {
                 if (instance == null) {
@@ -78,8 +72,8 @@ class HashCat {
         }
     }
 
-    public interface Listener {
-        void onProgress(Job job, Progress progress);
+    public interface ErrorListener {
+        void onError(Exception e);
     }
 
     private ExecutorService hashCatExecutor;
@@ -91,7 +85,9 @@ class HashCat {
     // Queued jobs
     private Map<Uri, List<Job>> jobQueue;
 
-    private Listener listener = null;
+    private Process hashCatProcess = null;
+
+    private ErrorListener errorListener = null;
 
     private HashCat() {
         // Creates an Executor that uses a single worker thread operating off
@@ -106,16 +102,16 @@ class HashCat {
         jobQueue = new HashMap<>();
     }
 
-    void setListener(Listener listener) {
-        this.listener = listener;
+    void setErrorListener(ErrorListener listener) {
+        errorListener = listener;
     }
 
     // Add jobs to the queue
     void add(Job... jobs) {
         for (Job job : jobs) {
-            List<Job> list = jobQueue.get(job.getWordList());
+            List<Job> list = jobQueue.get(job.getUri());
             if (list == null)
-                list = jobQueue.put(job.getWordList(), new ArrayList<>());
+                list = jobQueue.put(job.getUri(), new ArrayList<>());
             list.add(job);
             // Update the job state
             job.setState(Job.State.QUEUED);
@@ -128,41 +124,41 @@ class HashCat {
         jobQueue.forEach((uri, jobList) -> {
             hashCatExecutor.execute(() -> processJobs(uri, jobList));
         });
-        jobQueue.clear();
     }
 
     void stop(Job... jobs) {
-        for (Job job : jobs) {
-            String jobId = job.getPmkId();
-            Uri key = job.getWordList();
+        stop(Arrays.asList(jobs));
+    }
 
-            // First check the queue
-            List<Job> queued = jobQueue.get(key);
-            if (queued != null) {
-                List<Job> filtered = queued.stream()
-                        .filter(j -> !jobId.equals(j.getPmkId()))
-                        .collect(Collectors.toList());
-                jobQueue.replace(key, filtered);
-            }
-            // If job is running not much we can do without interrupting.
-            // But if all running jobs should be stopped the hashcat should
-            // be stopped as well.
-            else {
-                // TODO
-            }
+    void stop(List<Job> jobs) {
+        if (hashCatProcess == null)
+            return;
+
+        for (Job job : jobs)
+            job.setState(Job.State.STOPPING);
+
+        // If no running jobs left, stop hashcat too
+        AtomicLong cnt = new AtomicLong();
+        jobQueue.forEach((uri, jobList) -> {
+            cnt.addAndGet(jobList.stream().filter(job -> job.getState() == Job.State.RUNNING).count());
+        });
+        if (cnt.get() == 0)
+            stopProcess();
+    }
+
+    private void stopProcess() {
+        if (hashCatProcess != null) {
+            hashCatProcess.destroy();
+            hashCatProcess = null;
         }
     }
 
     // Process a job group
     private void processJobs(Uri uri, List<Job> jobs) {
-        if (jobs.isEmpty())
-            return;
-
         setState(jobs, Job.State.STARTING);
 
-        Process process = null;
         try {
-            process = Runtime.getRuntime().exec(
+            hashCatProcess = Runtime.getRuntime().exec(
                     new String[] {
                             "./hashcat",
                             "-m", "16800",
@@ -180,20 +176,23 @@ class HashCat {
                     workingDir
             );
 
-            pipeStream(Utils.openInputStream(uri), process.getOutputStream());
-            parseOutput(process, uri, jobs);
+            pipeStream(Utils.openInputStream(uri), hashCatProcess.getOutputStream());
+            parseOutput(hashCatProcess, uri, jobs);
 
-            InputStream errStream = process.getErrorStream();
+            InputStream errStream = hashCatProcess.getErrorStream();
             if (errStream.available() > 0)
                 throw new Exception(Utils.toString(errStream));
         }
         catch (Exception e) {
-            e.printStackTrace();
+            setError(e);
         }
         finally {
-            if (process != null)
-                process.destroy();
+            // Remove finished jobs from the queue
+            List<Job> jobList = jobQueue.get(uri);
+            if (jobList != null)
+                jobList.removeIf(jobs::contains);
 
+            stopProcess();
             setState(jobs, Job.State.NOT_RUNNING);
         }
     }
@@ -203,8 +202,14 @@ class HashCat {
     }
 
     private void setProgress(List<Job> jobs, Progress progress) {
-        if (listener != null)
-            uiHandler.post(() -> jobs.forEach(job -> listener.onProgress(job, progress)));
+        uiHandler.post(() -> jobs.forEach(job -> job.setProgress(progress)));
+    }
+
+    private void setError(Exception err) {
+        if (errorListener != null)
+            uiHandler.post(() -> errorListener.onError(err));
+        else
+            err.printStackTrace();
     }
 
     // Generate job hashes to be read by hashcat process
@@ -225,7 +230,7 @@ class HashCat {
     // if not specified (needed for progress indication).
     private Future<WordList> getWordList(Uri uri) {
         return poolExecutor.submit(() -> {
-            WordList wordList = WordLists.getOrCreate(uri);
+            WordList wordList = WordListManager.getInstance().getOrCreate(uri);
             // Count number of words and update word list
             if (wordList.getNrWords() == null) {
                 // Open and count number of words
@@ -244,7 +249,7 @@ class HashCat {
                     }
                 }
                 catch (Exception e) {
-                    e.printStackTrace();
+                    setError(e);
                 }
             }
             return wordList;
@@ -260,7 +265,7 @@ class HashCat {
                     sink.write(buffer, 0, cnt);
             }
             catch (IOException e) {
-                e.printStackTrace();
+                setError(e);
             }
         });
     }
@@ -322,9 +327,8 @@ class HashCat {
                             // next time, as total number, for better precision.
                             if (progress.state == 5 && (cnt == null || cnt != progress.nr_complete))
                                 wordList.setNrWords(progress.nr_complete);
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
+                        } catch (Exception e) {
+                            setError(e);
                         }
                     }
 

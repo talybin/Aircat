@@ -66,8 +66,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
             return;
         }
 
-        // Wait for job to be loaded
-        App.repo().getJob(key).observe(getViewLifecycleOwner(), this::setJob);
+        setJob(JobManager.getInstance().get(key));
 
         // Alternatives for recovered password
         bottomDialog = new BottomSheetDialog(requireContext());
@@ -105,7 +104,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         //((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getWordList().getPath());
 
         // TODO remove me (just a test)
-        App.repo().getWordList(job.getWordList()).observe(getViewLifecycleOwner(), wordList -> {
+        WordListManager.getInstance().getOrCreate(job.getUri(), wordList -> {
             TextView v = requireView().findViewById(R.id.job_details_wordlist);
             v.setText(wordList.getFileName() + " (" + wordList.getNrWords() + " words)");
         });
@@ -164,17 +163,16 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
     }
 
     private void startJob() {
-        Context context = getContext();
-        if (!job.start(context))
-            Toast.makeText(context, R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+        HashCat.getInstance().start(job);
+        if (job.getState() == Job.State.NOT_RUNNING)
+            Toast.makeText(getContext(), R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
     }
 
     private void pauseJob() {
     }
 
     private void removeJob() {
-        job.stop();
-        App.repo().delete(job);
+        JobManager.getInstance().remove(job);
     }
 
 
@@ -207,7 +205,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
             case R.id.job_details_hash_info:
                 Log.d("onViewClick", "---> job_details_hash_info");
-                if (copyToClipboard("hashcat", HashCat2.makeHash(job)))
+                if (copyToClipboard("hashcat", job.getHash()))
                     Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
                 break;
 
@@ -257,10 +255,10 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         Uri uri = data.getData();
         if (uri != null) {
             //WordList wordList = new WordList(uri);
-            App.repo().insert(new WordList(uri));
+            WordListManager.getInstance().add(new WordList(uri));
 
             // Update current job and the view (setJob will be called)
-            job.setWordList(uri);
+            job.setUri(uri);
         }
     }
 }

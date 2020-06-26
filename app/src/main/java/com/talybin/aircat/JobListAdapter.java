@@ -16,7 +16,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class JobListAdapter
+        extends RecyclerView.Adapter<RecyclerView.ViewHolder>
+{
 
     interface Listener {
         void onItemClick(JobViewHolder holder);
@@ -25,7 +27,7 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     static class JobViewHolder
             extends RecyclerView.ViewHolder
-            implements Job.StateListener
+            implements Job.StateListener, Job.ProgressListener
     {
         private TextView ssid;
         private TextView password;
@@ -51,15 +53,10 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ssid.setText(job.getSsid());
 
             job.setStateListener(this);
-            job.setProgressListener((progress, ex) -> {
-                if (ex != null)
-                    Toast.makeText(itemView.getContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
-                else
-                    bindProgress(job, progress);
-            });
+            job.setProgressListener(this);
 
             onStateChange(job);
-            bindProgress(job, job.getProgress());
+            onProgressChange(job, job.getProgress());
         }
 
         @Override
@@ -67,7 +64,8 @@ public class JobListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             state.setText(job.getState().toString());
         }
 
-        private void bindProgress(Job job, HashCat2.Progress progress) {
+        @Override
+        public void onProgressChange(Job job, HashCat.Progress progress) {
             Context context = itemView.getContext();
 
             float percentComplete = 0;

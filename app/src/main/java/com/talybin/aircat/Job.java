@@ -47,6 +47,10 @@ public class Job {
         void onStateChange(Job job);
     }
 
+    public interface ProgressListener {
+        void onProgressChange(Job job, HashCat.Progress progress);
+    }
+
     @PrimaryKey
     @ColumnInfo(name = "pmkid")
     @NonNull
@@ -73,7 +77,7 @@ public class Job {
     @ColumnInfo(name = "word_list")
     @Nullable
     @TypeConverters(UriConverter.class)
-    private Uri wordList;
+    private Uri uri;
 
     @ColumnInfo(name = "password")
     @Nullable
@@ -86,24 +90,24 @@ public class Job {
     private StateListener stateListener = null;
 
     @Ignore
-    private HashCat2.Listener progressListener = null;
+    private HashCat.Progress progress = null;
 
     @Ignore
-    private HashCat2 hashCat = null;
+    private ProgressListener progressListener = null;
 
     public Job(
             @NonNull String pmkId,
             @Nullable String ssid,
             @NonNull String apMac,
             @NonNull String clientMac,
-            @Nullable Uri wordList,
+            @Nullable Uri uri,
             @Nullable String password)
     {
         this.pmkId = pmkId;
         this.ssid = ssid;
         this.apMac = apMac;
         this.clientMac = clientMac;
-        this.wordList = wordList;
+        this.uri = uri;
         this.password = password;
     }
 
@@ -127,14 +131,14 @@ public class Job {
         return clientMac;
     }
 
-    void setWordList(@Nullable Uri uri) {
-        wordList = uri;
+    void setUri(@Nullable Uri uri) {
+        this.uri = uri;
         writeChanges();
     }
 
     @Nullable
-    Uri getWordList() {
-        return wordList;
+    Uri getUri() {
+        return uri;
     }
 
     void setPassword(@Nullable String password) {
@@ -148,11 +152,16 @@ public class Job {
     }
 
     void setState(State state) {
-        this.state = state;
-        if (state == State.NOT_RUNNING)
-            hashCat = null;
-        if (stateListener != null)
-            stateListener.onStateChange(this);
+        if (state != this.state) {
+            this.state = state;
+
+            // Remove progress on stopped job
+            if (state == State.NOT_RUNNING)
+                setProgress(null);
+
+            if (stateListener != null)
+                stateListener.onStateChange(this);
+        }
     }
 
     State getState() {
@@ -169,44 +178,26 @@ public class Job {
                 Utils.toHexSequence(ssid != null ? ssid : ""));
     }
 
-    @Nullable
-    HashCat2.Progress getProgress() {
-        return hashCat != null ? hashCat.getProgress() : null;
-    }
-
     void setStateListener(StateListener listener) {
         this.stateListener = listener;
     }
 
-    void setProgressListener(HashCat2.Listener listener) {
+    void setProgressListener(ProgressListener listener) {
         this.progressListener = listener;
     }
 
-    boolean start(Context context) {
-        if (state != Job.State.NOT_RUNNING)
-            return false;
-
-        stop();
-        // Reset password
-        password = null;
-
-        hashCat = new HashCat2(context, this, (progress, ex) -> {
-            if (progressListener != null)
-                progressListener.onProgress(progress, ex);
-        });
-        hashCat.start();
-
-        return true;
+    @Nullable
+    HashCat.Progress getProgress() {
+        return progress;
     }
 
-    // Stop hashcat job if running
-    void stop() {
-        if (hashCat != null)
-            hashCat.abort();
-        // hashCat will be set to null on NOT_RUNNING state
+    void setProgress(HashCat.Progress progress) {
+        this.progress = progress;
+        if (progressListener != null)
+            progressListener.onProgressChange(this, progress);
     }
 
-    void writeChanges() {
-        App.repo().update(this);
+    private void writeChanges() {
+        JobManager.getInstance().update(this);
     }
 }
