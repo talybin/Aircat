@@ -13,6 +13,8 @@ import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
+import java.util.function.Predicate;
+
 @Entity(tableName = "job_table")
 public class Job {
 
@@ -169,6 +171,16 @@ public class Job {
 
     State getState() {
         return state;
+    }
+
+    // Return true if job is running
+    boolean isRunning() {
+        return state == State.STARTING || state == State.RUNNING;
+    }
+
+    // Return true if job has been added to queue or running
+    boolean isProcessing() {
+        return isRunning() || state == State.QUEUED;
     }
 
     // Return hash in hashcat format: <pmkid>*<ap mac>*<client mac>*<ssid as hex>

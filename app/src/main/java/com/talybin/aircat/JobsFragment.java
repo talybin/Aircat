@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static android.app.Activity.RESULT_OK;
@@ -127,9 +128,11 @@ public class JobsFragment extends Fragment
         return true;
     }
 
-    private void updateActionModeTitle() {
-        if (actionMode != null)
+    private void updateActionMode() {
+        if (actionMode != null) {
             actionMode.setTitle("" + adapter.getSelectedItemCount());
+            actionMode.invalidate();
+        }
     }
 
     private void toggleSelection(int idx) {
@@ -140,19 +143,38 @@ public class JobsFragment extends Fragment
         else {
             if (actionMode == null)
                 actionMode = ((AppCompatActivity)requireActivity()).startSupportActionMode(this);
-            updateActionModeTitle();
+            updateActionMode();
         }
+    }
+
+    private List<Job> getSelectedJobs() {
+        List<Job> allJobs = adapter.getJobs();
+        return adapter.getSelectedItems()
+                .stream().map(allJobs::get).collect(Collectors.toList());
+    }
+
+    private void startSelectedJobs() {
+        HashCat.getInstance().start(
+                getSelectedJobs().stream()
+                        .filter(job -> !job.isProcessing())
+                        .collect(Collectors.toList()));
+        actionMode.finish();
+    }
+
+    private void stopSelectedJobs() {
+        HashCat.getInstance().stop(
+                getSelectedJobs().stream()
+                        .filter(Job::isProcessing)
+                        .collect(Collectors.toList()));
+        actionMode.finish();
     }
 
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
         MenuInflater inflater = mode.getMenuInflater();
-        inflater.inflate(R.menu.job_detail_menu, menu);
+        inflater.inflate(R.menu.job_menu, menu);
         // Add Settings menu item from main_menu
         inflater.inflate(R.menu.menu_main, menu);
-
-        menu.findItem(R.id.action_pause).setVisible(false);
-        menu.findItem(R.id.action_start).setVisible(false);
 
         createJobBut.setVisibility(View.GONE);
         return true;
@@ -160,6 +182,12 @@ public class JobsFragment extends Fragment
 
     @Override
     public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        long runningCnt = getSelectedJobs().stream()
+                .filter(Job::isProcessing).count();
+
+        menu.findItem(R.id.action_start).setVisible(runningCnt < adapter.getSelectedItemCount());
+        menu.findItem(R.id.action_stop).setVisible(runningCnt > 0);
+
         return false;
     }
 
@@ -168,17 +196,21 @@ public class JobsFragment extends Fragment
         switch (item.getItemId()) {
 
             case R.id.action_remove:
-                List<Job> allJobs = adapter.getJobs();
-                List<Job> selected = adapter.getSelectedItems()
-                        .stream().map(allJobs::get).collect(Collectors.toList());
-
-                JobManager.getInstance().remove(selected);
+                JobManager.getInstance().remove(getSelectedJobs());
                 actionMode.finish();
                 return true;
 
             case R.id.action_select_all:
                 adapter.selectRange(0, adapter.getJobs().size());
-                updateActionModeTitle();
+                updateActionMode();
+                return true;
+
+            case R.id.action_start:
+                startSelectedJobs();
+                return true;
+
+            case R.id.action_stop:
+                stopSelectedJobs();
                 return true;
         }
         return false;

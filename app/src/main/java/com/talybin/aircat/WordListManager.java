@@ -27,7 +27,6 @@ class WordListManager {
     private WordListManager() {
         wordListDao = AppDatabase.getDatabase(App.getContext()).wordListDao();
         uiHandler = new Handler();
-        //AppDatabase.databaseExecutor.execute(() -> wordListDao.deleteAll());
     }
 
     // Get word list synchronously.

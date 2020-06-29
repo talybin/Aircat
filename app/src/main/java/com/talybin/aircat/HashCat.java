@@ -22,6 +22,7 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class HashCat {
@@ -103,18 +104,17 @@ class HashCat {
         errorListener = listener;
     }
 
-    // Add jobs to the queue
-    void add(Job... jobs) {
+    void start(Job... jobs) {
+        start(Arrays.asList(jobs));
+    }
+
+    // Start or queue processing with specified jobs
+    void start(List<Job> jobs) {
         for (Job job : jobs) {
             jobQueue.add(job);
             // Update the job state
             job.setState(Job.State.QUEUED);
         }
-    }
-
-    // Start or queue processing with previously added or/and specified jobs
-    void start(Job... jobs) {
-        add(jobs);
         runNext();
     }
 
@@ -123,24 +123,15 @@ class HashCat {
     }
 
     void stop(List<Job> jobs) {
-
         for (Job job : jobs) {
-            job.setState(Job.State.STOPPING);
+            job.setState(
+                    job.isRunning() ? Job.State.STOPPING : Job.State.NOT_RUNNING);
             // Remove from the queue
             jobQueue.remove(job);
         }
 
         // If no running jobs left, stop hashcat too
-        int cnt = 0;
-        for (Job job : jobQueue) {
-            switch (job.getState()) {
-                case STARTING:
-                case RUNNING:
-                    ++cnt;
-                    break;
-            }
-        }
-        if (cnt == 0)
+        if (jobQueue.stream().noneMatch(Job::isRunning))
             stopProcess();
     }
 
@@ -383,7 +374,6 @@ class HashCat {
                             setError(e);
                         }
                     }
-                    Log.d("HashCat", "---> complete " + progress.nr_complete + " of " + progress.total);
 
                     // This is the last interesting token in progress line,
                     // notify user

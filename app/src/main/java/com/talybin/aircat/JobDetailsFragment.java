@@ -121,16 +121,16 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.job_detail_menu, menu);
+        inflater.inflate(R.menu.job_menu, menu);
         menu.findItem(R.id.action_select_all).setVisible(false);
     }
 
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         boolean loaded = job != null;
-        boolean running = loaded && job.getState() != Job.State.NOT_RUNNING;
+        boolean running = loaded && job.isProcessing();
 
-        menu.findItem(R.id.action_pause).setVisible(loaded && running);
+        menu.findItem(R.id.action_stop).setVisible(loaded && running);
         menu.findItem(R.id.action_start).setVisible(loaded && !running);
 
         super.onPrepareOptionsMenu(menu);
@@ -142,8 +142,8 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
             case R.id.action_start:
                 startJob();
                 return true;
-            case R.id.action_pause:
-                pauseJob();
+            case R.id.action_stop:
+                stopJob();
                 return true;
             case R.id.action_remove:
                 removeJob();
@@ -164,7 +164,9 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
             requireActivity().invalidateOptionsMenu();
     }
 
-    private void pauseJob() {
+    private void stopJob() {
+        HashCat.getInstance().stop(job);
+        requireActivity().invalidateOptionsMenu();
     }
 
     private void removeJob() {
@@ -250,7 +252,6 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
         Uri uri = data.getData();
         if (uri != null) {
-            //WordList wordList = new WordList(uri);
             WordListManager.getInstance().add(new WordList(uri));
 
             // Update current job and the view
