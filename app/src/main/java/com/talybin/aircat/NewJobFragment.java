@@ -1,6 +1,8 @@
 package com.talybin.aircat;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.transition.ChangeBounds;
@@ -16,7 +18,9 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,7 +35,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class NewJobActivity extends AppCompatActivity implements ApListAdapter.ClickListener {
+public class NewJobFragment extends Fragment implements ApListAdapter.ClickListener {
 
     static final String EXTRA_PMKID = "PMKID";
     static final String EXTRA_SSID = "SSID";
@@ -49,13 +53,22 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
     private List<ApInfo> scanResults = new ArrayList<>();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_new_job);
+    public View onCreateView(
+            LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState
+    ) {
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.fragment_new_job, container, false);
+    }
+
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        Context ctx = requireContext();
 
         // Job list
-        apList = findViewById(R.id.ap_list);
-        apList.setLayoutManager(new LinearLayoutManager(this));
+        apList = view.findViewById(R.id.ap_list);
+        apList.setLayoutManager(new LinearLayoutManager(ctx));
         apList.setHasFixedSize(true);
 
         // Specify an adapter
@@ -63,14 +76,14 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
         apList.setAdapter(adapter);
 
         // Empty view (visible when ap list is empty)
-        emptyView = findViewById(R.id.ap_empty_view);
+        emptyView = view.findViewById(R.id.ap_empty_view);
 
         // Wifi manager
-        wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
 
         // Enable wifi if not already
         if (!wifiManager.isWifiEnabled()) {
-            Toast.makeText(this, R.string.enabling_wifi, Toast.LENGTH_LONG).show();
+            Toast.makeText(ctx, R.string.enabling_wifi, Toast.LENGTH_LONG).show();
             wifiManager.setWifiEnabled(true);
         }
 
@@ -81,7 +94,7 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
                 getScanResults();
             }
         };
-        registerReceiver(
+        ctx.registerReceiver(
                 scanResultsReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
         // Initiate scan every 10 seconds
@@ -99,11 +112,11 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroyView() {
         scanTimer.cancel();
-        unregisterReceiver(scanResultsReceiver);
+        requireActivity().unregisterReceiver(scanResultsReceiver);
 
-        super.onDestroy();
+        super.onDestroyView();
     }
 
     private void getScanResults() {
@@ -149,8 +162,9 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
     }
 
     private Process fetchEapol(ApInfo apInfo, EapolListener callback) {
+        Handler uiHandler = new Handler();
         String[] args = {
-                "su", "-c", getFilesDir() + "/tcpdump/tcpdump",
+                "su", "-c", App.getContext().getFilesDir() + "/tcpdump/tcpdump",
                 "-i", Utils.getWirelessInterface(),
                 "-c", "1",      // Read one packet
                 "-s", "200",    // Set snaplen size to 200, EAPOL is just below this
@@ -165,7 +179,7 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
             CompletableFuture.supplyAsync(() -> Eapol.fromStream(is)).handle((res, ex) -> {
                 process.destroy();
 
-                runOnUiThread(() -> {
+                uiHandler.post(() -> {
                     // Clean up
                     wifiManager.removeNetwork(networkId);
 
@@ -189,7 +203,8 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
 
     @Override
     public void onClick(ApInfo apInfo) {
-        ProgressDialog waitDialog = new ProgressDialog(this);
+
+        ProgressDialog waitDialog = new ProgressDialog(getContext());
         Handler giveUpHanlder = new Handler();
         Utils.Holder<Runnable> giveUpTask = new Utils.Holder<>();
         AtomicBoolean canceled = new AtomicBoolean(false);
@@ -201,18 +216,17 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
 
             if (err != null) {
                 if (!canceled.get())
-                    Toast.makeText(this, err, Toast.LENGTH_LONG).show();
+                    Toast.makeText(getContext(), err, Toast.LENGTH_LONG).show();
             }
             else {
-                Intent replyIntent = new Intent();
-
-                replyIntent.putExtra(EXTRA_PMKID, eapol.pmkId);
-                replyIntent.putExtra(EXTRA_SSID, apInfo.ssid);
-                replyIntent.putExtra(EXTRA_AP_MAC, eapol.apMac);
-                replyIntent.putExtra(EXTRA_CLIENT_MAC, eapol.clientMac);
-
-                setResult(RESULT_OK, replyIntent);
-                finish();
+                Job newJob = new Job(
+                        eapol.pmkId, apInfo.ssid, eapol.apMac, eapol.clientMac,
+                        WordList.getDefault(), null
+                );
+                if (JobManager.getInstance().add(newJob))
+                    goBack();
+                else
+                    Toast.makeText(getContext(), getString(R.string.job_already_exist), Toast.LENGTH_LONG).show();
             }
         }));
 
@@ -224,7 +238,7 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
             // Give up after some amount of time
             giveUpTask.set(() -> {
                 cancel.run();
-                Toast.makeText(this, getString(R.string.no_answer, apInfo.getSSID()), Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(), getString(R.string.no_answer, apInfo.getSSID()), Toast.LENGTH_LONG).show();
             });
             giveUpHanlder.postDelayed(giveUpTask.get(), 10000);
 
@@ -240,5 +254,9 @@ public class NewJobActivity extends AppCompatActivity implements ApListAdapter.C
 
             waitDialog.show();
         }
+    }
+
+    private void goBack() {
+        NavHostFragment.findNavController(this).popBackStack();
     }
 }

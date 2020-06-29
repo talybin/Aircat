@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static android.app.Activity.RESULT_OK;
@@ -73,10 +72,8 @@ public class JobsFragment extends Fragment
         // Create new job button
         createJobBut = view.findViewById(R.id.createNewJobBut);
 
-        createJobBut.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), NewJobActivity.class);
-            startActivityForResult(intent, NEW_JOB_ACTIVITY_REQUEST_CODE);
-        });
+        createJobBut.setOnClickListener(v ->
+                navController.navigate(R.id.action_JobsFragment_to_CreateJobFragment));
     }
 
     @Override
@@ -92,10 +89,10 @@ public class JobsFragment extends Fragment
                 resultCode == RESULT_OK &&
                 data != null)
         {
-            String pmkId = data.getStringExtra(NewJobActivity.EXTRA_PMKID);
-            String ssid = data.getStringExtra(NewJobActivity.EXTRA_SSID);
-            String apMac = data.getStringExtra(NewJobActivity.EXTRA_AP_MAC);
-            String clMac = data.getStringExtra(NewJobActivity.EXTRA_CLIENT_MAC);
+            String pmkId = data.getStringExtra(NewJobFragment.EXTRA_PMKID);
+            String ssid = data.getStringExtra(NewJobFragment.EXTRA_SSID);
+            String apMac = data.getStringExtra(NewJobFragment.EXTRA_AP_MAC);
+            String clMac = data.getStringExtra(NewJobFragment.EXTRA_CLIENT_MAC);
 
             if (pmkId != null && apMac != null && clMac != null) {
                 JobManager.getInstance().add(new Job(
@@ -158,7 +155,6 @@ public class JobsFragment extends Fragment
                 getSelectedJobs().stream()
                         .filter(job -> !job.isProcessing())
                         .collect(Collectors.toList()));
-        actionMode.finish();
     }
 
     private void stopSelectedJobs() {
@@ -166,7 +162,6 @@ public class JobsFragment extends Fragment
                 getSelectedJobs().stream()
                         .filter(Job::isProcessing)
                         .collect(Collectors.toList()));
-        actionMode.finish();
     }
 
     @Override
@@ -193,6 +188,10 @@ public class JobsFragment extends Fragment
 
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        // Double click my cause exception here
+        if (actionMode == null)
+            return false;
+
         switch (item.getItemId()) {
 
             case R.id.action_remove:
@@ -207,10 +206,12 @@ public class JobsFragment extends Fragment
 
             case R.id.action_start:
                 startSelectedJobs();
+                actionMode.finish();
                 return true;
 
             case R.id.action_stop:
                 stopSelectedJobs();
+                actionMode.finish();
                 return true;
         }
         return false;

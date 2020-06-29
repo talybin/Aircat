@@ -13,6 +13,7 @@ import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 
 @Entity(tableName = "job_table")
@@ -147,8 +148,11 @@ public class Job {
     }
 
     void setPassword(@Nullable String password) {
-        this.password = password;
-        writeChanges();
+        boolean changed = !Objects.equals(this.password, password);
+        if (changed) {
+            this.password = password;
+            writeChanges();
+        }
     }
 
     @Nullable

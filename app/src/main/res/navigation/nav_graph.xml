@@ -24,9 +24,9 @@
     </fragment>
     <fragment
         android:id="@+id/CreateJobFragment"
-        android:name="com.talybin.aircat.CreateJobFragment"
+        android:name="com.talybin.aircat.NewJobFragment"
         android:label="@string/create_job_fragment_label"
-        tools:layout="@layout/fragment_create_job">
+        tools:layout="@layout/fragment_new_job">
 
         <action
             android:id="@+id/action_CreateJobFragment_to_JobsFragment"

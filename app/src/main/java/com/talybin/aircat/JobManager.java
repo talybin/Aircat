@@ -88,10 +88,15 @@ class JobManager {
         return null;
     }
 
-    void add(Job job) {
+    boolean add(Job job) {
+        // The job list is unique
+        if (get(job.getPmkId()) != null)
+            return false;
+
         AppDatabase.databaseExecutor.execute(() -> jobDao.insert(job));
         jobList.add(job);
         listUpdated();
+        return true;
     }
 
     void update(Job job) {

@@ -5,9 +5,12 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
@@ -73,8 +76,8 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         bottomDialog.setContentView(R.layout.job_item_bottom_sheet);
 
         final int[] jobActions = {
-                R.id.job_action_copy,
-                R.id.job_action_connect,
+                //R.id.job_action_copy,
+                R.id.job_action_browse,
         };
         for (int id : jobActions) {
             View v = Objects.requireNonNull(bottomDialog.findViewById(id));
@@ -104,9 +107,9 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getUri().getPath());
 
         // Click listeners
-        jobItem.setOnClickListener(v -> showBottomMenu());
+        jobItem.setOnClickListener(v -> showPasswordDialog());
         view.findViewById(R.id.job_details_hash_info).setOnClickListener(this::onViewClick);
-        view.findViewById(R.id.job_details_wordlist_info).setOnClickListener(this::onViewClick);
+        view.findViewById(R.id.job_details_wordlist_info).setOnClickListener(v -> bottomDialog.show());
 
         requireActivity().invalidateOptionsMenu();
     }
@@ -179,12 +182,25 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         requireActivity().invalidateOptionsMenu();
     }
 
-    private void showBottomMenu() {
-        // This menu is for actions on retrieved password
+    private void showPasswordDialog() {
+        // This dialog is for actions on retrieved password
         if (job.getPassword() == null)
             return;
 
-        bottomDialog.show();
+        Context context = requireContext();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(job.getSsid() != null ? job.getSsid() : getString(R.string.hidden))
+                .setMessage(job.getPassword())
+                // Connect
+                .setPositiveButton(R.string.connect, (dlg, id) -> connect())
+                // Copy to clipboard
+                .setNegativeButton(android.R.string.copy, (dlg, id) -> {
+                    if (copyToClipboard(getString(R.string.password), job.getPassword()))
+                        Toast.makeText(context, R.string.password_clipped, Toast.LENGTH_SHORT).show();
+                });
+
+        builder.create().show();
     }
 
     private void onViewClick(View view) {
@@ -192,12 +208,8 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         Context ctx = requireContext();
 
         switch (view.getId()) {
-            case R.id.job_action_copy:
-                if (copyToClipboard(ctx.getString(R.string.password), job.getPassword()))
-                    Toast.makeText(ctx, R.string.password_clipped, Toast.LENGTH_SHORT).show();
-                break;
 
-            case R.id.job_details_wordlist_info:
+            case R.id.job_action_browse:
                 browseForWordlist();
                 break;
 
@@ -239,6 +251,33 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
             Toast.makeText(getContext(),
                     getString(R.string.error_msg, e.getMessage()), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void connect() {
+        Context context = requireContext();
+
+        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        if (wifiManager == null) {
+            Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        WifiConfiguration conf = new WifiConfiguration();
+
+        conf.hiddenSSID = job.getSsid() == null;
+        conf.preSharedKey = "\"" + job.getPassword() + "\"";
+        if (conf.hiddenSSID) {
+            conf.SSID = job.getApMac();
+            conf.BSSID = "\"" + job.getApMac()+ "\"";
+        }
+        else
+            conf.SSID = "\"" + job.getSsid() + "\"";
+
+        int networkId = wifiManager.addNetwork(conf);
+
+        wifiManager.disconnect();
+        wifiManager.enableNetwork(networkId, true);
+        wifiManager.reconnect();
     }
 
     @Override
