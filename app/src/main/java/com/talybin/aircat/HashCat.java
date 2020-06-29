@@ -17,14 +17,12 @@ import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 class HashCat {
 
@@ -76,30 +74,29 @@ class HashCat {
         void onError(Exception e);
     }
 
-    private ExecutorService hashCatExecutor;
     private ExecutorService poolExecutor;
 
     // Handler for executing events on main ui thread
     private Handler uiHandler;
 
     // Queued jobs
-    private Map<Uri, List<Job>> jobQueue;
+    private List<Job> jobQueue;
 
+    // Process is not null if currently running
     private Process hashCatProcess = null;
+
+    // Used in UI thread only
+    private boolean isRunning = false;
 
     private ErrorListener errorListener = null;
 
     private HashCat() {
-        // Creates an Executor that uses a single worker thread operating off
-        // an unbounded queue
-        hashCatExecutor = Executors.newSingleThreadExecutor();
-
         // Creates a thread pool that creates new threads as needed, but will
         // reuse previously constructed threads when they are available
         poolExecutor = Executors.newCachedThreadPool();
 
         uiHandler = new Handler();
-        jobQueue = new HashMap<>();
+        jobQueue = new ArrayList<>();
     }
 
     void setErrorListener(ErrorListener listener) {
@@ -109,12 +106,7 @@ class HashCat {
     // Add jobs to the queue
     void add(Job... jobs) {
         for (Job job : jobs) {
-            List<Job> list = jobQueue.get(job.getUri());
-            if (list == null) {
-                list = new ArrayList<>();
-                jobQueue.put(job.getUri(), list);
-            }
-            list.add(job);
+            jobQueue.add(job);
             // Update the job state
             job.setState(Job.State.QUEUED);
         }
@@ -123,18 +115,7 @@ class HashCat {
     // Start or queue processing with previously added or/and specified jobs
     void start(Job... jobs) {
         add(jobs);
-        jobQueue.forEach((uri, jobList) -> {
-            hashCatExecutor.execute(() -> {
-                processJobs(uri, jobList);
-
-                // Remove finished jobs from the queue
-                uiHandler.post(() -> {
-                    List<Job> all = jobQueue.get(uri);
-                    if (all != null)
-                        all.removeIf(jobList::contains);
-                });
-            });
-        });
+        runNext();
     }
 
     void stop(Job... jobs) {
@@ -142,19 +123,55 @@ class HashCat {
     }
 
     void stop(List<Job> jobs) {
-        if (hashCatProcess == null)
-            return;
 
-        for (Job job : jobs)
+        for (Job job : jobs) {
             job.setState(Job.State.STOPPING);
+            // Remove from the queue
+            jobQueue.remove(job);
+        }
 
         // If no running jobs left, stop hashcat too
-        AtomicLong cnt = new AtomicLong();
-        jobQueue.forEach((uri, jobList) -> {
-            cnt.addAndGet(jobList.stream().filter(job -> job.getState() == Job.State.RUNNING).count());
-        });
-        if (cnt.get() == 0)
+        int cnt = 0;
+        for (Job job : jobQueue) {
+            switch (job.getState()) {
+                case STARTING:
+                case RUNNING:
+                    ++cnt;
+                    break;
+            }
+        }
+        if (cnt == 0)
             stopProcess();
+    }
+
+    private void runNext() {
+        if (isRunning)
+            return;
+
+        // Is there any job?
+        if (!jobQueue.isEmpty()) {
+            Uri uri = jobQueue.get(0).getUri();
+            // Get all jobs with same uri
+            List<Job> sameUriList = jobQueue.stream()
+                    .filter(job -> job.getUri().equals(uri))
+                    .collect(Collectors.toList());
+
+            sameUriList.forEach(job -> job.setState(Job.State.STARTING));
+
+            isRunning = true;
+            poolExecutor.execute(() -> {
+                processJobs(uri, sameUriList);
+
+                uiHandler.post(() -> {
+                    // Remove finished jobs
+                    jobQueue.removeAll(sameUriList);
+                    sameUriList.forEach(job -> job.setState(Job.State.NOT_RUNNING));
+                    // Process next chunk
+                    isRunning = false;
+                    runNext();
+                });
+            });
+        }
     }
 
     private void stopProcess() {
@@ -166,8 +183,9 @@ class HashCat {
 
     // Process a job group
     private void processJobs(Uri uri, List<Job> jobs) {
-        setState(jobs, Job.State.STARTING);
+        File hashFile = null;
         try {
+            hashFile = createHashFile(jobs);
             hashCatProcess = Runtime.getRuntime().exec(
                     new String[] {
                             "./hashcat",
@@ -178,7 +196,7 @@ class HashCat {
                             "--machine-readable",
                             "--logfile-disable",
                             "--potfile-disable",
-                            createHashFile(jobs).getPath()
+                            hashFile.getPath()
                     },
                     // No environment variables
                     null,
@@ -201,7 +219,8 @@ class HashCat {
         }
         finally {
             stopProcess();
-            setState(jobs, Job.State.NOT_RUNNING);
+            if (hashFile != null)
+                hashFile.delete();
         }
     }
 
@@ -223,7 +242,6 @@ class HashCat {
     // Generate job hashes to be read by hashcat process
     private static File createHashFile(List<Job> jobs) throws IOException {
         File hashFile = File.createTempFile("hashcat-", ".16800");
-        hashFile.deleteOnExit();
 
         try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(hashFile))) {
             for (Job job : jobs) {
@@ -346,19 +364,26 @@ class HashCat {
                             WordList wordList = wordListFuture.get();
                             Long cnt = wordList.getNrWords();
 
-                            // Update progress total
-                            if (progress.total == 0 && cnt != null)
-                                progress.total = cnt;
+                            if (cnt != null) {
+                                // Adjust to number of jobs
+                                cnt *= jobs.size();
 
-                            // On exhausted state (gone thru word list but didn't find anything)
-                            // update number of words to number completed. It will be used
-                            // next time, as total number, for better precision.
-                            if (progress.state == 5 && (cnt == null || cnt != progress.nr_complete))
-                                wordList.setNrWords(progress.nr_complete);
-                        } catch (Exception e) {
+                                // Update progress total
+                                if (progress.total == 0)
+                                    progress.total = cnt;
+
+                                // On exhausted state (gone thru word list but didn't find anything)
+                                // update number of words to number completed. It will be used
+                                // next time, as total number, for better precision.
+                                if (progress.state == 5 && cnt != progress.nr_complete)
+                                    wordList.setNrWords(progress.nr_complete / jobs.size());
+                            }
+                        }
+                        catch (Exception e) {
                             setError(e);
                         }
                     }
+                    Log.d("HashCat", "---> complete " + progress.nr_complete + " of " + progress.total);
 
                     // This is the last interesting token in progress line,
                     // notify user
