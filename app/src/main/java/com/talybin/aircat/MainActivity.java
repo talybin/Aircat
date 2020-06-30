@@ -1,8 +1,15 @@
 package com.talybin.aircat;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -22,6 +29,22 @@ import android.widget.Toast;
 public class MainActivity extends AppCompatActivity {
 
     private NavController navController;
+
+    /*
+    private BroadcastReceiver connectionListener = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ConnectivityManager conMan = (ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+            if (conMan != null) {
+                NetworkInfo netInfo = conMan.getActiveNetworkInfo();
+                if (netInfo != null && netInfo.getType() == ConnectivityManager.TYPE_WIFI)
+                    Toast.makeText(context, R.string.connected_wifi, Toast.LENGTH_SHORT).show();
+            }
+        }
+    };
+     */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +75,15 @@ public class MainActivity extends AppCompatActivity {
 
         HashCat.getInstance().setErrorListener(
                 err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
+
+        // Notify about Wifi connection state
+        //registerReceiver(connectionListener, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+    }
+
+    @Override
+    protected void onDestroy() {
+        //unregisterReceiver(connectionListener);
+        super.onDestroy();
     }
 
     @Override
@@ -89,22 +121,18 @@ public class MainActivity extends AppCompatActivity {
             return;
 
         // Install in background, should not take a long time
-        new Thread() {
-            @Override
-            public void run() {
-                final String[] executables = {
-                        "hashcat/hashcat",
-                        "tcpdump/tcpdump",
-                };
-                if (Utils.unpackRawZip(R.raw.assets, executables))
-                    Log.d("MainActivity", "install complete");
-                else
-                    runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this)
-                            .setTitle(R.string.extraction_error)
-                            .setMessage(R.string.extraction_error_msg)
-                            .setNegativeButton(android.R.string.ok, null)
-                            .show());
-            }
-        }.start();
+        App.getThreadPool().execute(() -> {
+            final String[] executables = {
+                    "hashcat/hashcat", "tcpdump",
+            };
+            if (Utils.unpackRawZip(R.raw.assets, executables))
+                Log.d("MainActivity", "install complete");
+            else
+                runOnUiThread(() -> new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(R.string.extraction_error)
+                        .setMessage(R.string.extraction_error_msg)
+                        .setNegativeButton(android.R.string.ok, null)
+                        .show());
+        });
     }
 }

@@ -1,14 +1,8 @@
 package com.talybin.aircat;
 
-import android.content.Context;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.util.Log;
-
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,15 +14,13 @@ import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class Utils {
-
-    private static final String LOG_TAG = "Utils";
+class Utils {
 
     // Cached wireless interface name
     private static String wirelessInterface = null;
 
     // A value holder
-    public static class Holder<T> {
+    static class Holder<T> {
         private T value = null;
 
         Holder() {}
@@ -46,7 +38,7 @@ public class Utils {
     }
 
     // Extract files from zipped raw resource file to specified directory
-    public static boolean unpackRawZip(int resourceId, String destDir, String[] executables)
+    static boolean unpackRawZip(int resourceId, String destDir, String[] executables)
     {
         ZipEntry zipEntry;
 
@@ -84,14 +76,14 @@ public class Utils {
     }
 
     // Extract files from zipped raw resource file to files directory
-    public static boolean unpackRawZip(int resourceId, String[] executables) {
+    static boolean unpackRawZip(int resourceId, String[] executables) {
         return unpackRawZip(resourceId, App.getContext().getFilesDir().toString(), executables);
     }
 
     // Try to find wireless interface.
     // Return a string with name of wireless interface, otherwise, if
     // not found or found more than one, return "any".
-    public static String getWirelessInterface() {
+    static String getWirelessInterface() {
         if (wirelessInterface == null) {
             String devListPath = "/sys/class/net";
             File folder = new File(devListPath);
@@ -116,11 +108,6 @@ public class Utils {
         return wirelessInterface;
     }
 
-
-    static InputStream openInputStream(Uri uri) throws FileNotFoundException {
-        return App.getInstance().getContentResolver().openInputStream(uri);
-    }
-
     static String toString(InputStream src) throws IOException {
         InputStreamReader isr = new InputStreamReader(src);
         StringBuilder sb = new StringBuilder();
@@ -140,7 +127,7 @@ public class Utils {
     }
 
     // Convert string to series of ascii bytes in hex format
-    public static String toHexSequence(String src) {
+    static String toHexSequence(String src) {
         StringBuilder buffer = new StringBuilder();
         char[] digits = new char[2];
 
@@ -151,79 +138,4 @@ public class Utils {
         }
         return buffer.toString();
     }
-
-    public static void retrieveNrRows(Context context, Uri uri) {
-        new AsyncTask<Void, Void, Long>() {
-            @Override
-            protected Long doInBackground(Void... iss) {
-                InputStream is = null;
-                byte[] buffer = new byte[4096];
-                long rows = 0;
-
-                try {
-                    is = context.getContentResolver().openInputStream(uri);
-                    if (is != null) {
-                        for (int cnt; (cnt = is.read(buffer)) > 0; ) {
-                            for (int i = 0; i < cnt; ++i)
-                                if (buffer[i] == '\n') ++rows;
-                        }
-                        return rows;
-                    }
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-                finally {
-                    if (is != null)
-                        try { is.close(); } catch (IOException ignored) {}
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Long nrRows) {
-                // TODO save to file
-                if (nrRows != null)
-                    Log.d("retrieveNrRows", uri.getLastPathSegment() + ": " + nrRows);
-            }
-        }.execute();
-/*
-        new Thread() {
-            @Override
-            public void run() {
-
-                InputStream is = context.getContentResolver().openInputStream(uri);
-                ContentResolver contentResolver = context.getContentResolver();
-                byte[] buffer = new byte[4096];
-                long rows = 0;
-
-                for (
-                        int cnt; (cnt = is.read(buffer)) > 0; ) {
-                    for (int i = 0; i < cnt; ++i)
-                        if (buffer[i] == '\n') ++rows;
-                }
-            }
-        }.start();
- */
-    }
-
-    /*
-    public static long getUriSize(ContentResolver contentResolver, Uri uri) {
-        AssetFileDescriptor afd = null;
-        long size = 0;
-        try {
-            afd = contentResolver.openAssetFileDescriptor(uri, "r");
-        }
-        catch (FileNotFoundException ignored) {}
-        if (afd != null) {
-            size = afd.getLength();
-            try { afd.close(); } catch (IOException ignored) {}
-        }
-        return size;
-    }
-
-    public static long getUriSize(Context context, Uri uri) {
-        return getUriSize(context.getContentResolver(), uri);
-    }
-     */
 }

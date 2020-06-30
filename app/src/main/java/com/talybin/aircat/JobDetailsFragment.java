@@ -104,7 +104,8 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());
         ((TextView)view.findViewById(R.id.job_details_mac_client)).setText(job.getClientMac());
         ((TextView)view.findViewById(R.id.job_details_pmkid)).setText(job.getPmkId());
-        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(job.getUri().getPath());
+        ((TextView)view.findViewById(R.id.job_details_wordlist)).setText(
+                WordList.getFileName(job.getUri()));
 
         // Click listeners
         jobItem.setOnClickListener(v -> showPasswordDialog());
@@ -292,7 +293,6 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         Uri uri = data.getData();
         if (uri != null) {
             WordListManager.getInstance().add(new WordList(uri));
-
             // Update current job and the view
             job.setUri(uri);
             setJob(job);

@@ -11,10 +11,17 @@ import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
 import java.io.File;
-import java.io.InputStream;
 
 @Entity(tableName = "wordlist_table")
 public class WordList {
+
+    /*
+    public enum Type {
+        UNKNOWN,
+        PLAIN,
+        ZIP,
+        GZ,
+    }*/
 
     @PrimaryKey
     @NonNull
@@ -46,18 +53,18 @@ public class WordList {
         return nrWords;
     }
 
-    public void setNrWords(@Nullable Long nrWords) {
+    void setNrWords(@Nullable Long nrWords) {
         this.nrWords = nrWords;
         writeChanges();
     }
 
-    String getFileName() {
+    static String getFileName(Uri uri) {
         String ret = Uri.decode(uri.toString());
         return ret.substring(ret.lastIndexOf("//") + 1);
     }
 
     static Uri getDefault() {
-        String defaultPath = App.getContext().getFilesDir() + "/wordlists/english.txt";
+        String defaultPath = App.getContext().getFilesDir() + "/wordlists/english.gz";
         return Uri.fromFile(new File(defaultPath));
     }
 

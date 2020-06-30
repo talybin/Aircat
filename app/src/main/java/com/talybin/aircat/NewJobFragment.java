@@ -164,7 +164,7 @@ public class NewJobFragment extends Fragment implements ApListAdapter.ClickListe
     private Process fetchEapol(ApInfo apInfo, EapolListener callback) {
         Handler uiHandler = new Handler();
         String[] args = {
-                "su", "-c", App.getContext().getFilesDir() + "/tcpdump/tcpdump",
+                "su", "-c", App.getContext().getFilesDir() + "/tcpdump",
                 "-i", Utils.getWirelessInterface(),
                 "-c", "1",      // Read one packet
                 "-s", "200",    // Set snaplen size to 200, EAPOL is just below this

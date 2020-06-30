@@ -7,6 +7,7 @@
     <string name="create_job_fragment_label">Select Access Point</string>
     <string name="next">Next</string>
     <string name="enabling_wifi">Enabling WiFi</string>
+    <string name="connected_wifi">Connected to WiFi</string>
     <string name="scanning">Scanning…</string>
     <string name="no_jobs_yet">No jobs yet</string>
     <string name="hidden">&lt;hidden&gt;</string>

@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
@@ -74,8 +72,6 @@ class HashCat {
         void onError(Exception e);
     }
 
-    private ExecutorService poolExecutor;
-
     // Handler for executing events on main ui thread
     private Handler uiHandler;
 
@@ -91,10 +87,6 @@ class HashCat {
     private ErrorListener errorListener = null;
 
     private HashCat() {
-        // Creates a thread pool that creates new threads as needed, but will
-        // reuse previously constructed threads when they are available
-        poolExecutor = Executors.newCachedThreadPool();
-
         uiHandler = new Handler();
         jobQueue = new ArrayList<>();
     }
@@ -149,7 +141,7 @@ class HashCat {
             sameUriList.forEach(job -> job.setState(Job.State.STARTING));
 
             isRunning = true;
-            poolExecutor.execute(() -> {
+            App.getThreadPool().execute(() -> {
                 processJobs(uri, sameUriList);
 
                 uiHandler.post(() -> {
@@ -165,9 +157,11 @@ class HashCat {
     }
 
     private void stopProcess() {
-        if (hashCatProcess != null) {
-            hashCatProcess.destroy();
-            hashCatProcess = null;
+        synchronized (HashCat.class) {
+            if (hashCatProcess != null) {
+                hashCatProcess.destroy();
+                hashCatProcess = null;
+            }
         }
     }
 
@@ -194,7 +188,7 @@ class HashCat {
                     workingDir
             );
 
-            InputStream src = Utils.openInputStream(uri);
+            InputStream src = Streams.openInputStream(uri);
             OutputStream sink = hashCatProcess.getOutputStream();
 
             pipeStream(src, sink);
@@ -245,24 +239,22 @@ class HashCat {
     // Async find word list by uri. Also updates number of words
     // if not specified (needed for progress indication).
     private Future<WordList> getWordList(Uri uri) {
-        return poolExecutor.submit(() -> {
+        return App.getThreadPool().submit(() -> {
             WordList wordList = WordListManager.getInstance().getOrCreate(uri);
             // Count number of words and update word list
             if (wordList.getNrWords() == null) {
                 // Open and count number of words
-                try (InputStream is = Utils.openInputStream(uri)) {
-                    if (is != null) {
-                        byte[] buffer = new byte[4096];
-                        long rows = 0;
+                try (InputStream is = Streams.openInputStream(uri)) {
+                    byte[] buffer = new byte[4096];
+                    long rows = 0;
 
-                        for (int cnt; (cnt = is.read(buffer)) > 0; ) {
-                            for (int i = 0; i < cnt; ++i)
-                                if (buffer[i] == '\n') ++rows;
-                        }
-
-                        // Update word list
-                        wordList.setNrWords(rows);
+                    for (int cnt; (cnt = is.read(buffer)) > 0; ) {
+                        for (int i = 0; i < cnt; ++i)
+                            if (buffer[i] == '\n') ++rows;
                     }
+
+                    // Update word list
+                    wordList.setNrWords(rows);
                 }
                 catch (Exception e) {
                     setError(e);
@@ -275,8 +267,7 @@ class HashCat {
     // Async copy content of one stream to another.
     // Closing streams on complete.
     private void pipeStream(InputStream src, OutputStream sink) {
-        poolExecutor.execute(() -> {
-            // TODO uses classes instead such as ZipStreamProvider, GZip, PlainText
+        App.getThreadPool().execute(() -> {
             byte[] buffer = new byte[4096];
             try {
                 for (int cnt; (cnt = src.read(buffer)) > 0;)
