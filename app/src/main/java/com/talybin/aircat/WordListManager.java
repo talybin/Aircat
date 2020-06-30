@@ -1,11 +1,12 @@
 package com.talybin.aircat;
 
 import android.net.Uri;
-import android.os.Handler;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
 
 class WordListManager {
 
@@ -22,38 +23,54 @@ class WordListManager {
     }
 
     private WordListDao wordListDao;
-    private Handler uiHandler;
+
+    private List<WordList> wordLists = new ArrayList<>();;
 
     private WordListManager() {
         wordListDao = AppDatabase.getDatabase(App.getContext()).wordListDao();
-        uiHandler = new Handler();
 
         //AppDatabase.databaseExecutor.execute(wordListDao::deleteAll);
+
+        AppDatabase.databaseExecutor.execute(() -> {
+            wordLists = wordListDao.getWordLists();
+        });
     }
 
-    // Get word list synchronously.
-    // On failure will create and add new word list asynchronously.
+    List<WordList> getAll() {
+        return wordLists;
+    }
+
+    @Nullable
+    WordList get(Uri uri) {
+        for (WordList wl : wordLists) {
+            if (wl.getUri().equals(uri))
+                return wl;
+        }
+        return null;
+    }
+
     @NonNull
     WordList getOrCreate(Uri uri) {
-        WordList wordList = wordListDao.get(uri);
+        WordList wordList = get(uri);
         if (wordList == null)
-            add(wordList = new WordList(uri));
+            noCheckAdd(wordList = new WordList(uri));
         return wordList;
-    }
-
-    // Get word list asynchronously
-    void getOrCreate(Uri uri, Consumer<WordList> callback) {
-        AppDatabase.databaseExecutor.execute(() -> {
-            WordList wordList = getOrCreate(uri);
-            uiHandler.post(() -> callback.accept(wordList));
-        });
     }
 
     void update(WordList wordList) {
         AppDatabase.databaseExecutor.execute(() -> wordListDao.update(wordList));
     }
 
-    void add(WordList wordList) {
+    boolean add(WordList wordList) {
+        if (get(wordList.getUri()) != null)
+            return false;
+
+        noCheckAdd(wordList);
+        return true;
+    }
+
+    private void noCheckAdd(WordList wordList) {
+        wordLists.add(wordList);
         AppDatabase.databaseExecutor.execute(() -> wordListDao.insert(wordList));
     }
 }

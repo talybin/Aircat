@@ -21,12 +21,17 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -75,9 +80,12 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         bottomDialog = new BottomSheetDialog(requireContext());
         bottomDialog.setContentView(R.layout.job_item_bottom_sheet);
 
+        setupBottomDialog();
+
         final int[] jobActions = {
                 //R.id.job_action_copy,
                 R.id.job_action_browse,
+                // TODO on long click make uri editable
         };
         for (int id : jobActions) {
             View v = Objects.requireNonNull(bottomDialog.findViewById(id));
@@ -121,6 +129,45 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         bottomDialog = null;
 
         super.onDestroyView();
+    }
+
+    private void setupBottomDialog() {
+        Context context = requireContext();
+
+        ListView builtInList = bottomDialog.findViewById(R.id.built_in_list_view);
+        ListView lastUsedList = bottomDialog.findViewById(R.id.last_used_list_view);
+
+        if (builtInList != null) {
+            String[] files = Paths.get(context.getFilesDir().getPath(), "wordlists").toFile().list();
+
+            if (files != null && files.length > 0) {
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                        context, R.layout.wordlist_choose_item, R.id.wordlist_choose_item_text, files);
+                builtInList.setAdapter(adapter);
+            }
+            else {
+                bottomDialog.findViewById(R.id.built_in_label).setVisibility(View.GONE);
+                builtInList.setVisibility(View.GONE);
+            }
+        }
+
+        if (lastUsedList != null) {
+            List<String> wordLists = WordListManager.getInstance().getAll().stream()
+                    .sorted((left, right) -> left.getLastUsed().compareTo(right.getLastUsed()))
+                    .limit(5)
+                    .map(wordList -> WordList.getFileName(wordList.getUri()))
+                    .collect(Collectors.toList());
+
+            if (!wordLists.isEmpty()) {
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                        context, R.layout.wordlist_choose_item, R.id.wordlist_choose_item_text, wordLists);
+                lastUsedList.setAdapter(adapter);
+            }
+            else {
+                bottomDialog.findViewById(R.id.last_used_label).setVisibility(View.GONE);
+                lastUsedList.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Override

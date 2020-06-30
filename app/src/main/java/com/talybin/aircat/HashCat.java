@@ -133,6 +133,9 @@ class HashCat {
         // Is there any job?
         if (!jobQueue.isEmpty()) {
             Uri uri = jobQueue.get(0).getUri();
+            // Getting word list should be on UI thread
+            WordList wordList = getWordList(uri);
+
             // Get all jobs with same uri
             List<Job> sameUriList = jobQueue.stream()
                     .filter(job -> job.getUri().equals(uri))
@@ -142,7 +145,7 @@ class HashCat {
 
             isRunning = true;
             App.getThreadPool().execute(() -> {
-                processJobs(uri, sameUriList);
+                processJobs(wordList, sameUriList);
 
                 uiHandler.post(() -> {
                     // Remove finished jobs
@@ -166,7 +169,7 @@ class HashCat {
     }
 
     // Process a job group
-    private void processJobs(Uri uri, List<Job> jobs) {
+    private void processJobs(WordList wordList, List<Job> jobs) {
         File hashFile = null;
         try {
             hashFile = createHashFile(jobs);
@@ -188,15 +191,18 @@ class HashCat {
                     workingDir
             );
 
-            InputStream src = Streams.openInputStream(uri);
+            InputStream src = Streams.openInputStream(wordList.getUri());
             OutputStream sink = hashCatProcess.getOutputStream();
 
             pipeStream(src, sink);
-            parseOutput(hashCatProcess, uri, jobs);
+            parseOutput(hashCatProcess, wordList, jobs);
 
             InputStream errStream = hashCatProcess.getErrorStream();
             if (errStream.available() > 0)
                 throw new Exception(Utils.toString(errStream));
+
+            // Update on success only
+            wordList.setLastUsed();
         }
         catch (Exception e) {
             setError(e);
@@ -236,15 +242,12 @@ class HashCat {
         return hashFile;
     }
 
-    // Async find word list by uri. Also updates number of words
-    // if not specified (needed for progress indication).
-    private Future<WordList> getWordList(Uri uri) {
-        return App.getThreadPool().submit(() -> {
-            WordList wordList = WordListManager.getInstance().getOrCreate(uri);
-            // Count number of words and update word list
-            if (wordList.getNrWords() == null) {
-                // Open and count number of words
-                try (InputStream is = Streams.openInputStream(uri)) {
+    private WordList getWordList(Uri uri) {
+        WordList wordList = WordListManager.getInstance().getOrCreate(uri);
+        // Count words if not done already
+        if (wordList.getNrWords() == null) {
+            App.getThreadPool().execute(() -> {
+                try (InputStream is = Streams.openInputStream(wordList.getUri())) {
                     byte[] buffer = new byte[4096];
                     long rows = 0;
 
@@ -259,9 +262,9 @@ class HashCat {
                 catch (Exception e) {
                     setError(e);
                 }
-            }
-            return wordList;
-        });
+            });
+        }
+        return wordList;
     }
 
     // Async copy content of one stream to another.
@@ -287,13 +290,11 @@ class HashCat {
         });
     }
 
-    private void parseOutput(Process process, Uri uri, List<Job> jobs) {
+    private void parseOutput(Process process, WordList wordList, List<Job> jobs) {
 
         Progress progress = new Progress();
         InputStreamReader outStream = new InputStreamReader(process.getInputStream());
         Scanner scanner = new Scanner(outStream);
-
-        Future<WordList> wordListFuture = getWordList(uri);
 
         while (scanner.hasNext()) {
             //String line = scanner.nextLine();
@@ -340,29 +341,20 @@ class HashCat {
                         setState(jobs, Job.State.RUNNING);
 
                     // Update total number if possible
-                    if (wordListFuture.isDone()) {
-                        try {
-                            WordList wordList = wordListFuture.get();
-                            Long cnt = wordList.getNrWords();
+                    Long words = wordList.getNrWords();
+                    if (words != null) {
+                        // Adjust to number of jobs
+                        words *= jobs.size();
 
-                            if (cnt != null) {
-                                // Adjust to number of jobs
-                                cnt *= jobs.size();
+                        // Update progress total
+                        if (progress.total == 0)
+                            progress.total = words;
 
-                                // Update progress total
-                                if (progress.total == 0)
-                                    progress.total = cnt;
-
-                                // On exhausted state (gone thru word list but didn't find anything)
-                                // update number of words to number completed. It will be used
-                                // next time, as total number, for better precision.
-                                if (progress.state == 5 && cnt != progress.nr_complete)
-                                    wordList.setNrWords(progress.nr_complete / jobs.size());
-                            }
-                        }
-                        catch (Exception e) {
-                            setError(e);
-                        }
+                        // On exhausted state (gone thru word list but didn't find anything)
+                        // update number of words to number completed. It will be used
+                        // next time, as total number, for better precision.
+                        if (progress.state == 5 && words != progress.nr_complete)
+                            wordList.setNrWords(progress.nr_complete / jobs.size());
                     }
 
                     // This is the last interesting token in progress line,

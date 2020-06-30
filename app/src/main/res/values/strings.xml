@@ -26,6 +26,11 @@
     <string name="remove">Remove</string>
     <string name="connect">Connect</string>
 
+    <!-- Bottom word list chooser -->
+    <string name="last_used">Last used</string>
+    <string name="built_in">Built-in</string>
+    <string name="external">External</string>
+
     <!-- Job states -->
     <string name="not_running">Not running</string>
     <string name="queued">Queued</string>
