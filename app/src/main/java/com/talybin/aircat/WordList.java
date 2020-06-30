@@ -70,9 +70,13 @@ public class WordList {
         writeChanges();
     }
 
-    static String getFileName(Uri uri) {
+    static String getFilePath(Uri uri) {
         String ret = Uri.decode(uri.toString());
         return ret.substring(ret.lastIndexOf("//") + 1);
+    }
+
+    static String getFileName(Uri uri) {
+        return new File(getFilePath(uri)).getName();
     }
 
     static Uri getDefault() {

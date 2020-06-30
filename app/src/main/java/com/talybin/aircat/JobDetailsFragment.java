@@ -21,6 +21,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -29,8 +30,12 @@ import android.widget.Toast;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static android.app.Activity.RESULT_OK;
@@ -81,16 +86,6 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         bottomDialog.setContentView(R.layout.job_item_bottom_sheet);
 
         setupBottomDialog();
-
-        final int[] jobActions = {
-                //R.id.job_action_copy,
-                R.id.job_action_browse,
-                // TODO on long click make uri editable
-        };
-        for (int id : jobActions) {
-            View v = Objects.requireNonNull(bottomDialog.findViewById(id));
-            v.setOnClickListener(this::onViewClick);
-        }
     }
 
     private void setJob(Job job) {
@@ -134,37 +129,44 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
     private void setupBottomDialog() {
         Context context = requireContext();
 
-        ListView builtInList = bottomDialog.findViewById(R.id.built_in_list_view);
-        ListView lastUsedList = bottomDialog.findViewById(R.id.last_used_list_view);
-
-        if (builtInList != null) {
-            String[] files = Paths.get(context.getFilesDir().getPath(), "wordlists").toFile().list();
-
-            if (files != null && files.length > 0) {
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                        context, R.layout.wordlist_choose_item, R.id.wordlist_choose_item_text, files);
-                builtInList.setAdapter(adapter);
-            }
-            else {
-                bottomDialog.findViewById(R.id.built_in_label).setVisibility(View.GONE);
-                builtInList.setVisibility(View.GONE);
-            }
+        final int[] jobActions = {
+                R.id.job_action_browse,
+                // TODO on long click make uri editable
+        };
+        for (int id : jobActions) {
+            View v = Objects.requireNonNull(bottomDialog.findViewById(id));
+            v.setOnClickListener(this::onViewClick);
         }
 
+        ListView lastUsedList = bottomDialog.findViewById(R.id.last_used_list_view);
+
         if (lastUsedList != null) {
-            List<String> wordLists = WordListManager.getInstance().getAll().stream()
+            Uri builtInUri = WordList.getDefault();
+
+            // Create a list of last used word lists excluding the built-in ones
+            List<Uri> wordLists = WordListManager.getInstance().getAll().stream()
                     .sorted((left, right) -> left.getLastUsed().compareTo(right.getLastUsed()))
+                    .map(WordList::getUri)
+                    .filter(uri -> !uri.equals(builtInUri))
                     .limit(5)
-                    .map(wordList -> WordList.getFileName(wordList.getUri()))
                     .collect(Collectors.toList());
+
+            // Always add built-in at the end
+            wordLists.add(builtInUri);
 
             if (!wordLists.isEmpty()) {
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                        context, R.layout.wordlist_choose_item, R.id.wordlist_choose_item_text, wordLists);
+                        context, R.layout.wordlist_choose_item, R.id.wordlist_choose_item_text,
+                        wordLists.stream().map(WordList::getFileName).collect(Collectors.toList()));
                 lastUsedList.setAdapter(adapter);
+                lastUsedList.setOnItemClickListener((parent, view, position, id) -> {
+                    bottomDialog.dismiss();
+                    // Update current job and the view
+                    job.setUri(wordLists.get(position));
+                    setJob(job);
+                });
             }
             else {
-                bottomDialog.findViewById(R.id.last_used_label).setVisibility(View.GONE);
                 lastUsedList.setVisibility(View.GONE);
             }
         }

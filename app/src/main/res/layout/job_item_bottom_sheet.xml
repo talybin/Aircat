@@ -3,64 +3,30 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:divider="@android:drawable/divider_horizontal_textfield"
     android:orientation="vertical"
-    android:padding="20dp">
-
-    <TextView
-        android:id="@+id/last_used_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/last_used"
-        android:textAllCaps="false"
-        android:textColor="@color/colorAccent"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <ListView
-        android:id="@+id/last_used_list_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        tools:listitem="@layout/wordlist_choose_item" />
-
-    <TextView
-        android:id="@+id/built_in_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="@string/built_in"
-        android:textAllCaps="false"
-        android:textColor="@color/colorAccent"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <ListView
-        android:id="@+id/built_in_list_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingVertical="5dp"
-        tools:listitem="@layout/wordlist_choose_item" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="@string/external"
-        android:textAllCaps="false"
-        android:textColor="@color/colorAccent"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+    android:showDividers="middle">
 
     <TextView
         android:id="@+id/job_action_browse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:clickable="true"
+        android:drawableStart="@drawable/ic_search_black_24dp"
         android:drawablePadding="10dp"
         android:drawableTint="#777777"
         android:focusable="true"
         android:foreground="?android:attr/selectableItemBackground"
-        android:padding="10dp"
+        android:padding="20dp"
         android:text="@string/browse_file"
-        android:textSize="16sp" />
+        android:textSize="18sp" />
+
+    <ListView
+        android:id="@+id/last_used_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="10dp"
+        tools:listitem="@layout/wordlist_choose_item" />
 
 </LinearLayout>
