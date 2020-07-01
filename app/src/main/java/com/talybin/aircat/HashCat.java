@@ -1,9 +1,11 @@
 package com.talybin.aircat;
 
 import android.annotation.SuppressLint;
-import android.content.SharedPreferences;
+import android.content.ComponentName;
+import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -20,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 class HashCat {
@@ -73,6 +74,10 @@ class HashCat {
         void onError(Exception e);
     }
 
+    // Connection to HashCat service
+    private ServiceConnection serviceConnection;
+    private HashCatService hashCatService = null;
+
     // Handler for executing events on main ui thread
     private Handler uiHandler;
 
@@ -90,6 +95,20 @@ class HashCat {
     private HashCat() {
         uiHandler = new Handler();
         jobQueue = new ArrayList<>();
+
+        serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                Log.d("ServiceConnection", "---> onServiceConnected");
+                //hashCatService = service;
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                Log.d("ServiceConnection", "---> onServiceDisconnected");
+                hashCatService = null;
+            }
+        };
     }
 
     void setErrorListener(ErrorListener listener) {
