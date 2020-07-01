@@ -14,13 +14,17 @@
         <action
             android:id="@+id/action_JobsFragment_to_CreateJobFragment"
             app:destination="@id/CreateJobFragment"
-            app:enterAnim="@android:anim/slide_in_left"
-            app:popEnterAnim="@android:anim/slide_in_left" />
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_JobsFragment_to_jobDetailsFragment"
             app:destination="@id/jobDetailsFragment"
-            app:enterAnim="@android:anim/slide_in_left"
-            app:popEnterAnim="@android:anim/slide_in_left" />
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
     <fragment
         android:id="@+id/CreateJobFragment"
