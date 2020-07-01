@@ -2,7 +2,6 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,7 +13,6 @@ import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
 import java.util.Objects;
-import java.util.function.Predicate;
 
 @Entity(tableName = "job_table")
 public class Job {
@@ -195,6 +193,10 @@ public class Job {
                 apMac.replace(":", ""),
                 clientMac.replace(":", ""),
                 Utils.toHexSequence(ssid != null ? ssid : ""));
+    }
+
+    StateListener getStateListener() {
+        return stateListener;
     }
 
     void setStateListener(StateListener listener) {

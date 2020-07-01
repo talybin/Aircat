@@ -66,10 +66,7 @@ class Utils {
             return false;
         }
         finally {
-            if (iss != null)
-                try { iss.close(); } catch (IOException ignored) {}
-            if (zis != null)
-                try { zis.close(); } catch (IOException ignored) {}
+            silentClose(iss, zis);
         }
 
         return true;

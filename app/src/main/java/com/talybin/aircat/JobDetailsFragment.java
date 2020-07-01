@@ -21,7 +21,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -29,13 +28,8 @@ import android.widget.Toast;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static android.app.Activity.RESULT_OK;
@@ -102,6 +96,18 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         View jobItem = view.findViewById(R.id.job_details_item);
         JobListAdapter.JobViewHolder viewHolder = new JobListAdapter.JobViewHolder(jobItem);
         viewHolder.bindData(job);
+
+        // Redirect state listener to re-invalidate options menu
+        Job.StateListener oldListener = job.getStateListener();
+        job.setStateListener(j -> {
+            if (j.getState() == Job.State.NOT_RUNNING) {
+                // Activity may be null here if Delete button pressed and
+                // we are about to leave this fragment
+                if (getActivity() != null)
+                    getActivity().invalidateOptionsMenu();
+            }
+            oldListener.onStateChange(j);
+        });
 
         // Fill fields
         ((TextView)view.findViewById(R.id.job_details_mac_ap)).setText(job.getApMac());

@@ -2,6 +2,9 @@ package com.talybin.aircat;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
+
+import androidx.preference.PreferenceManager;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,5 +44,9 @@ public class App extends Application {
 
     public static ExecutorService getThreadPool() {
         return instance.poolExecutor;
+    }
+
+    public static SharedPreferences settings() {
+        return PreferenceManager.getDefaultSharedPreferences(instance);
     }
 }

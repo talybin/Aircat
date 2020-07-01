@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Handler;
 import android.util.Log;
@@ -143,6 +144,9 @@ class HashCat {
 
             sameUriList.forEach(job -> job.setState(Job.State.STARTING));
 
+            if (App.settings().getBoolean("clear_password", false))
+                sameUriList.forEach(job -> job.setPassword(null));
+
             isRunning = true;
             App.getThreadPool().execute(() -> {
                 processJobs(wordList, sameUriList);
@@ -176,13 +180,38 @@ class HashCat {
             hashCatProcess = Runtime.getRuntime().exec(
                     new String[] {
                             "./hashcat",
+
+                            // Hash-type: WPA-PMKID-PBKDF2
                             "-m", "16800",
+
+                            // Attack Mode: Straight
                             "-a", "0",
+
+                            // Suppress output
                             "--quiet",
-                            "--status", "--status-timer=3",
+
+                            // Enable a specific workload profile from settings.
+                            // Default is 2 (Economic).
+                            "-w", App.settings().getString("hashcat_power_usage", "2"),
+
+                            // Enable automatic update of the status screen.
+                            // Sets seconds between status screen updates to X.
+                            "--status", "--status-timer=" +
+                                App.settings().getString("hashcat_refresh_interval", "3"),
+
+                            // Display the status view in a machine-readable format
                             "--machine-readable",
+
+                            // Enable removal of hashes once they are cracked.
+                            // Remained jobs will run faster.
+                            "--remove",
+
+                            // Disable the logfile. Not reading it here.
                             "--logfile-disable",
+
+                            // Do not write potfile. Using app database instead.
                             "--potfile-disable",
+
                             hashFile.getPath()
                     },
                     // No environment variables
@@ -296,6 +325,12 @@ class HashCat {
         InputStreamReader outStream = new InputStreamReader(process.getInputStream());
         Scanner scanner = new Scanner(outStream);
 
+        // Update status on first progress
+        boolean firstProgress = true;
+
+        // Number of jobs holds synchronization to hashcat output
+        int nrJobs = jobs.size();
+
         while (scanner.hasNext()) {
             //String line = scanner.nextLine();
             //Log.d("HashCat", "---> line [" + line + "]");
@@ -308,7 +343,6 @@ class HashCat {
             if (pos > 0) {
                 Log.d("HashCat", token);
 
-                String apMac = token.substring(0, pos);
                 for (Job job : jobs) {
                     // Encode job to output format
                     String encJob = String.format("%s:%s:%s:",
@@ -319,6 +353,17 @@ class HashCat {
                     if (token.startsWith(encJob)) {
                         String password = token.substring(token.lastIndexOf(':') + 1);
                         uiHandler.post(() -> job.setPassword(password));
+
+                        // Manually stop the job only if there other jobs pending
+                        if (jobs.size() > 1) {
+                            jobs.remove(job);
+                            uiHandler.post(() -> {
+                                // By removing from job queue this job will not be
+                                // scheduled again after this processing is done.
+                                jobQueue.remove(job);
+                                job.setState(Job.State.NOT_RUNNING);
+                            });
+                        }
                         break;
                     }
                 }
@@ -336,25 +381,27 @@ class HashCat {
 
                 case "PROGRESS":
                     progress.nr_complete = scanner.nextLong();
+
                     // Update state on first progress line
-                    if (progress.nr_complete == 0)
+                    if (firstProgress) {
                         setState(jobs, Job.State.RUNNING);
+                        firstProgress = false;
+                    }
 
                     // Update total number if possible
                     Long words = wordList.getNrWords();
                     if (words != null) {
                         // Adjust to number of jobs
-                        words *= jobs.size();
+                        words *= nrJobs;
 
                         // Update progress total
-                        if (progress.total == 0)
-                            progress.total = words;
+                        progress.total = words;
 
                         // On exhausted state (gone thru word list but didn't find anything)
                         // update number of words to number completed. It will be used
                         // next time, as total number, for better precision.
                         if (progress.state == 5 && words != progress.nr_complete)
-                            wordList.setNrWords(progress.nr_complete / jobs.size());
+                            wordList.setNrWords(progress.nr_complete / nrJobs);
                     }
 
                     // This is the last interesting token in progress line,

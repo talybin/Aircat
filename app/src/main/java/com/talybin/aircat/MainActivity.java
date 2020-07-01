@@ -1,15 +1,9 @@
 package com.talybin.aircat;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkInfo;
-import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -24,27 +18,14 @@ import androidx.navigation.ui.NavigationUI;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements SharedPreferences.OnSharedPreferenceChangeListener
+{
 
     private NavController navController;
-
-    /*
-    private BroadcastReceiver connectionListener = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            ConnectivityManager conMan = (ConnectivityManager)
-                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
-
-            if (conMan != null) {
-                NetworkInfo netInfo = conMan.getActiveNetworkInfo();
-                if (netInfo != null && netInfo.getType() == ConnectivityManager.TYPE_WIFI)
-                    Toast.makeText(context, R.string.connected_wifi, Toast.LENGTH_SHORT).show();
-            }
-        }
-    };
-     */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,14 +57,17 @@ public class MainActivity extends AppCompatActivity {
         HashCat.getInstance().setErrorListener(
                 err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
 
-        // Notify about Wifi connection state
-        //registerReceiver(connectionListener, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        // Listen to activity specific settings changes
+        App.settings().registerOnSharedPreferenceChangeListener(this);
+
+        // Apply settings
+        onSharedPreferenceChanged(App.settings(), "keep_screen_on");
     }
 
     @Override
     protected void onDestroy() {
-        //unregisterReceiver(connectionListener);
         super.onDestroy();
+        App.settings().unregisterOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -134,5 +118,18 @@ public class MainActivity extends AppCompatActivity {
                         .setNegativeButton(android.R.string.ok, null)
                         .show());
         });
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences pref, String key) {
+        if (key.equals("keep_screen_on")) {
+            boolean value = pref.getBoolean(key, false);
+            int flags = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+
+            if (value)
+                getWindow().addFlags(flags);
+            else
+                getWindow().clearFlags(flags);
+        }
     }
 }

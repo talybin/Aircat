@@ -1,20 +1,31 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory
+    <EditTextPreference
+        android:defaultValue="3"
+        android:key="hashcat_refresh_interval"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_refresh_interval"
         app:iconSpaceReserved="false"
-        app:title="@string/jobs_header">
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="word_list_default"
-            app:title="@string/jobs_default_word_list_title"
-            app:summary="@string/jobs_default_word_list_summary" >
-            <intent
-                android:action="android.intent.action.OPEN_DOCUMENT"
-                android:mimeType="*/*" />
-        </Preference>
-
-    </PreferenceCategory>
+        app:useSimpleSummaryProvider="true" />
+    <ListPreference
+        android:defaultValue="2"
+        android:entries="@array/power_consumption_entries"
+        android:entryValues="@array/power_consumption_values"
+        android:key="hashcat_power_usage"
+        android:title="@string/pref_power_consumption"
+        app:iconSpaceReserved="false"
+        app:useSimpleSummaryProvider="true" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="clear_password"
+        android:title="@string/pref_clear_password"
+        app:iconSpaceReserved="false" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="keep_screen_on"
+        android:title="@string/pref_keep_screen_on"
+        app:iconSpaceReserved="false" />
 
 </PreferenceScreen>

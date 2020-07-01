@@ -53,10 +53,9 @@
     <string name="title_activity_settings">Settings</string>
     <string name="job_already_exist">Job already exist</string>
 
-    <!-- Preference Titles -->
-    <string name="jobs_header">Jobs</string>
-
-    <!-- Jobs Preferences -->
-    <string name="jobs_default_word_list_title">Word list to use by default</string>
-    <string name="jobs_default_word_list_summary">Built-in</string>
+    <!-- Preferences Titles -->
+    <string name="pref_refresh_interval">Progress refresh interval in seconds</string>
+    <string name="pref_power_consumption">Power consumption</string>
+    <string name="pref_clear_password">Clear password on job start</string>
+    <string name="pref_keep_screen_on">Keep screen on</string>
 </resources>
