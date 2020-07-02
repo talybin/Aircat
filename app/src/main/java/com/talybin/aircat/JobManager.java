@@ -106,7 +106,7 @@ class JobManager {
     void remove(Job job) {
         if (jobList.remove(job)) {
             AppDatabase.databaseExecutor.execute(() -> jobDao.delete(job));
-            HashCat.getInstance().stop(job);
+            HashCatInterface.getInstance().stop(job);
             listUpdated();
         }
     }
@@ -122,7 +122,7 @@ class JobManager {
                 jobList.remove(job);
             }
         }
-        HashCat.getInstance().stop(jobs);
+        HashCatInterface.getInstance().stop(jobs);
         listUpdated();
     }
 }

@@ -11,7 +11,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.navigation.ActivityNavigator;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
@@ -55,7 +54,7 @@ public class MainActivity extends AppCompatActivity
 
         installDependencies();
 
-        HashCat.getInstance().setErrorListener(
+        HashCatInterface.getInstance().setErrorListener(
                 err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
 
         // Listen to activity specific settings changes
@@ -69,6 +68,7 @@ public class MainActivity extends AppCompatActivity
     protected void onDestroy() {
         super.onDestroy();
         App.settings().unregisterOnSharedPreferenceChangeListener(this);
+        Log.d("AirCat", "---> onDestroy");
     }
 
     @Override
@@ -132,5 +132,21 @@ public class MainActivity extends AppCompatActivity
             else
                 getWindow().clearFlags(flags);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Log.d("MainActivity", "---> binding service");
+        HashCatInterface.getInstance().bind(this);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        Log.d("MainActivity", "---> unbinding service");
+        HashCatInterface.getInstance().unbind(this);
     }
 }

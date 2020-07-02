@@ -154,14 +154,14 @@ public class JobsFragment extends Fragment
     }
 
     private void startSelectedJobs() {
-        HashCat.getInstance().start(
+        HashCatInterface.getInstance().start(
                 getSelectedJobs().stream()
                         .filter(job -> !job.isProcessing())
                         .collect(Collectors.toList()));
     }
 
     private void stopSelectedJobs() {
-        HashCat.getInstance().stop(
+        HashCatInterface.getInstance().stop(
                 getSelectedJobs().stream()
                         .filter(Job::isProcessing)
                         .collect(Collectors.toList()));

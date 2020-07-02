@@ -50,7 +50,7 @@ public class Job {
     }
 
     public interface ProgressListener {
-        void onProgressChange(Job job, HashCat.Progress progress);
+        void onProgressChange(Job job, HashCatService.Progress progress);
     }
 
     @PrimaryKey
@@ -92,7 +92,7 @@ public class Job {
     private StateListener stateListener = null;
 
     @Ignore
-    private HashCat.Progress progress = null;
+    private HashCatService.Progress progress = null;
 
     @Ignore
     private ProgressListener progressListener = null;
@@ -208,11 +208,11 @@ public class Job {
     }
 
     @Nullable
-    HashCat.Progress getProgress() {
+    HashCatService.Progress getProgress() {
         return progress;
     }
 
-    void setProgress(HashCat.Progress progress) {
+    void setProgress(HashCatService.Progress progress) {
         this.progress = progress;
         if (progressListener != null)
             progressListener.onProgressChange(this, progress);

@@ -216,7 +216,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
     }
 
     private void startJob() {
-        HashCat.getInstance().start(job);
+        HashCatInterface.getInstance().start(job);
         if (job.getState() == Job.State.NOT_RUNNING)
             Toast.makeText(getContext(), R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
         else
@@ -224,7 +224,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
     }
 
     private void stopJob() {
-        HashCat.getInstance().stop(job);
+        HashCatInterface.getInstance().stop(job);
         requireActivity().invalidateOptionsMenu();
     }
 
