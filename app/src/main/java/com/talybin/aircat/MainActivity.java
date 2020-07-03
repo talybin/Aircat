@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity
         installDependencies();
 
         HashCatInterface.getInstance().setErrorListener(
-                err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
+                err -> Toast.makeText(this, err, Toast.LENGTH_LONG).show());
 
         // Listen to activity specific settings changes
         App.settings().registerOnSharedPreferenceChangeListener(this);
@@ -132,19 +132,21 @@ public class MainActivity extends AppCompatActivity
             else
                 getWindow().clearFlags(flags);
         }
+        else
+            HashCatInterface.getInstance().updateSettings();
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStart() {
+        super.onStart();
 
         Log.d("MainActivity", "---> binding service");
         HashCatInterface.getInstance().bind(this);
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onStop() {
+        super.onStop();
 
         Log.d("MainActivity", "---> unbinding service");
         HashCatInterface.getInstance().unbind(this);

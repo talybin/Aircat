@@ -1,15 +1,12 @@
 package com.talybin.aircat;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Bundle;
+import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.Parcelable;
-import android.os.ResultReceiver;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -22,141 +19,166 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
-public class HashCatService extends Service implements Handler.Callback {
+public class HashCatServiceOld extends Service {
 
-    // Commands to the service
-    static final int MSG_SET_SETTINGS = 1;
-    static final int MSG_START_JOBS = 2;
-    static final int MSG_STOP_JOBS = 3;
+    public class ServiceBinder extends Binder {
+        HashCatServiceOld getService() {
+            return HashCatServiceOld.this;
+        }
+    }
 
-    // Arguments to intent and bundle
-    static final String ARG_PATH = "path";
-    static final String ARG_RECEIVER = "receiver";
-    static final String ARG_JOB_LIST = "jobs";
+    static class Progress {
+        // State of the job:
+        //  3 (running)
+        //  5 (exhausted)
+        //  6 (cracked)
+        //  7 (aborted)
+        //  8 (quit)
+        int state = 0;
 
-    // Setting keys
-    static final String SETTING_POWER_USAGE = "hashcat_power_usage";
-    static final String SETTING_REFRESH_INTERVAL = "hashcat_refresh_interval";
+        // Speed in hashes per second
+        int speed = 0;
 
-    // Event codes
-    static final int EVENT_CODE_ERROR = 1;
+        // Number bytes processed so far
+        long nr_complete = 0;
 
-    // Event arguments
-    static final String EVENT_ARG_ERROR = "error";
+        // Total number of bytes in initial input stream
+        long total = 0;
 
-    // Communication channels
-    private Messenger messenger = null;
-    private ResultReceiver resultReceiver = null;
+        // For debug purpose
+        @NonNull
+        @SuppressLint("DefaultLocale")
+        public String toString() {
+            return String.format("state: %d, speed: %d H/s, complete: %d/%d",
+                    state, speed, nr_complete, total);
+        }
+    }
 
-    // Threading
+    public interface ErrorListener {
+        void onError(Exception e);
+    }
+
+    private final IBinder serviceBinder = new ServiceBinder();
+
     private ExecutorService poolExecutor = null;
 
-    // Location path of hashcat
-    private String hashCatPath = null;
+    // Hashcat working directory
+    private File workingDir = null;
 
-    // Running hashcat process
-    private Process hashCatProcess = null;
+    // Handler for executing events on main ui thread
+    private Handler uiHandler = null;
 
     // Queued jobs
     private List<Job> jobQueue = new ArrayList<>();
 
-    // Current settings
-    Bundle settings = new Bundle();
+    // Process is not null if currently running
+    private Process hashCatProcess = null;
+
+    // Used in UI thread only
+    private boolean isRunning = false;
+
+    private ErrorListener errorListener = null;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        poolExecutor = Executors.newCachedThreadPool();
-    }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        poolExecutor.shutdownNow();
+        uiHandler = new Handler();
+        poolExecutor = Executors.newCachedThreadPool();
+        workingDir = Paths.get(getFilesDir().toString(), "hashcat").toFile();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        resultReceiver = intent.getParcelableExtra(ARG_RECEIVER);
-
-        messenger = new Messenger(new Handler(this));
-        return messenger.getBinder();
+        return serviceBinder;
     }
 
     @Override
-    public boolean onUnbind(Intent intent) {
-        resultReceiver = null;
-        messenger = null;
-        return super.onUnbind(intent);
+    public void onDestroy() {
+        super.onDestroy();
+        stopProcess();
+        poolExecutor.shutdownNow();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        hashCatPath = intent.getStringExtra(ARG_PATH);
-        //return Service.START_REDELIVER_INTENT;
-        return Service.START_STICKY;
+        return Service.START_NOT_STICKY;
     }
 
-    @Override
-    public boolean handleMessage(@NonNull Message msg) {
-        switch (msg.what) {
+    void setErrorListener(ErrorListener listener) {
+        errorListener = listener;
+    }
 
-            case MSG_SET_SETTINGS:
-                settings.putAll(msg.getData());
-                break;
-
-            case MSG_START_JOBS:
-                startJobs(msg.getData().getParcelableArrayList(ARG_JOB_LIST));
-                break;
-
-            case MSG_STOP_JOBS:
-                stopJobs(msg.getData().getParcelableArrayList(ARG_JOB_LIST));
-                break;
-
-            default:
-                setError(new Exception("Unknown message id: " + msg.what));
-                return false;
+    // Start or queue processing with specified jobs
+    void start(List<Job> jobs) {
+        for (Job job : jobs) {
+            jobQueue.add(job);
+            // Update the job state
+            job.setState(Job.State.QUEUED);
         }
-        return true;
+        runNext();
     }
 
-    private void setError(Exception err) {
-        if (resultReceiver != null) {
-            Bundle args = new Bundle();
-            args.putString(EVENT_ARG_ERROR, err.getMessage());
-
-            resultReceiver.send(EVENT_CODE_ERROR, args);
+    void stop(List<Job> jobs) {
+        for (Job job : jobs) {
+            job.setState(
+                    job.isRunning() ? Job.State.STOPPING : Job.State.NOT_RUNNING);
+            // Remove from the queue
+            jobQueue.remove(job);
         }
-        else
-            err.printStackTrace();
+
+        // If no running jobs left, stop hashcat too
+        if (jobQueue.stream().noneMatch(Job::isRunning))
+            stopProcess();
     }
 
-    private void startJobs(List<Job> jobs) {
-        if (jobs != null && !jobs.isEmpty()) {
-            jobQueue.addAll(jobs);
+    private void runNext() {
+        if (isRunning)
+            return;
 
-            jobs.forEach(job -> Log.d("startJobs", "---> " + job));
-        }
-    }
+        // Is there any job?
+        if (!jobQueue.isEmpty()) {
+            Uri uri = jobQueue.get(0).getUri();
+            // Getting word list should be on UI thread
+            WordList wordList = getWordList(uri);
 
-    private void stopJobs(List<Job> jobs) {
-        if (jobs != null && !jobs.isEmpty()) {
+            // Get all jobs with same uri
+            List<Job> sameUriList = jobQueue.stream()
+                    .filter(job -> job.getUri().equals(uri))
+                    .collect(Collectors.toList());
 
-            jobs.forEach(job -> Log.d("startJobs", "---> " + job));
+            sameUriList.forEach(job -> job.setState(Job.State.STARTING));
+
+            if (App.settings().getBoolean("clear_password", false))
+                sameUriList.forEach(job -> job.setPassword(null));
+
+            isRunning = true;
+            poolExecutor.execute(() -> {
+                processJobs(wordList, sameUriList);
+
+                uiHandler.post(() -> {
+                    // Remove finished jobs
+                    jobQueue.removeAll(sameUriList);
+                    sameUriList.forEach(job -> job.setState(Job.State.NOT_RUNNING));
+                    // Process next chunk
+                    isRunning = false;
+                    runNext();
+                });
+            });
         }
     }
 
     private void stopProcess() {
-        synchronized (HashCatService.class) {
+        synchronized (HashCatServiceOld.class) {
             if (hashCatProcess != null) {
                 hashCatProcess.destroy();
                 hashCatProcess = null;
@@ -164,7 +186,6 @@ public class HashCatService extends Service implements Handler.Callback {
         }
     }
 
-    /*
     // Process a job group
     private void processJobs(WordList wordList, List<Job> jobs) {
         File hashFile = null;
@@ -185,12 +206,12 @@ public class HashCatService extends Service implements Handler.Callback {
 
                             // Enable a specific workload profile from settings.
                             // Default is 2 (Economic).
-                            "-w", settings.getString(SETTING_POWER_USAGE, "2"),
+                            "-w", App.settings().getString("hashcat_power_usage", "2"),
 
                             // Enable automatic update of the status screen.
                             // Sets seconds between status screen updates to X.
-                            "--status",
-                            "--status-timer=" + settings.getString(SETTING_REFRESH_INTERVAL, "3"),
+                            "--status", "--status-timer=" +
+                                App.settings().getString("hashcat_refresh_interval", "3"),
 
                             // Display the status view in a machine-readable format
                             "--machine-readable",
@@ -202,16 +223,15 @@ public class HashCatService extends Service implements Handler.Callback {
                             // Disable the logfile. Not reading it here.
                             "--logfile-disable",
 
-                            // TODO remove password field from Job
                             // Do not write potfile. Using app database instead.
-                            //"--potfile-disable",
+                            "--potfile-disable",
 
                             hashFile.getPath()
                     },
                     // No environment variables
                     null,
                     // Working directory
-                    new File(hashCatPath)
+                    workingDir
             );
 
             InputStream src = Streams.openInputStream(wordList.getUri());
@@ -235,6 +255,21 @@ public class HashCatService extends Service implements Handler.Callback {
             if (hashFile != null)
                 hashFile.delete();
         }
+    }
+
+    private void setState(List<Job> jobs, Job.State state) {
+        uiHandler.post(() -> jobs.forEach(job -> job.setState(state)));
+    }
+
+    private void setProgress(List<Job> jobs, Progress progress) {
+        uiHandler.post(() -> jobs.forEach(job -> job.setProgress(progress)));
+    }
+
+    private void setError(Exception err) {
+        if (errorListener != null)
+            uiHandler.post(() -> errorListener.onError(err));
+        else
+            err.printStackTrace();
     }
 
     // Generate job hashes to be read by hashcat process
@@ -300,7 +335,7 @@ public class HashCatService extends Service implements Handler.Callback {
 
     private void parseOutput(Process process, WordList wordList, List<Job> jobs) {
 
-        HashCatServiceOld.Progress progress = new HashCatServiceOld.Progress();
+        Progress progress = new Progress();
         InputStreamReader outStream = new InputStreamReader(process.getInputStream());
         Scanner scanner = new Scanner(outStream);
 
@@ -392,5 +427,4 @@ public class HashCatService extends Service implements Handler.Callback {
             }
         }
     }
-     */
 }

@@ -4,7 +4,15 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
+import android.os.ResultReceiver;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,9 +23,7 @@ public class HashCatInterface implements ServiceConnection {
 
     private static HashCatInterface instance = null;
 
-    private HashCatService hashCatService = null;
-    private List<Consumer<HashCatService>> runQueue = new ArrayList<>();
-
+    // This is a singleton
     static HashCatInterface getInstance() {
         if (instance == null) {
             synchronized (HashCatInterface.class) {
@@ -28,47 +34,108 @@ public class HashCatInterface implements ServiceConnection {
         return instance;
     }
 
+    public interface ErrorListener {
+        void onError(String err);
+    }
+
+    // Messenger for communicating with the service
+    private Messenger messenger = null;
+
+    // Waiting for service connection queue
+    private List<Consumer<Messenger>> sendQueue = new ArrayList<>();
+
+    private ErrorListener errorListener = null;
+
+    // Singleton constructor
+    private HashCatInterface() {
+    }
+
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
-        HashCatService.ServiceBinder binder = (HashCatService.ServiceBinder) service;
-        hashCatService = binder.getService();
+        messenger = new Messenger(service);
+
+        // Send current settings
+        updateSettings();
 
         // Invoke runnable queue
-        runQueue.forEach(fn -> fn.accept(hashCatService));
-        runQueue.clear();
+        sendQueue.forEach(fn -> fn.accept(messenger));
+        sendQueue.clear();
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-        hashCatService = null;
+        messenger = null;
     }
 
+    // Start service
     void start(Context context) {
-        context.startService(new Intent(context, HashCatService.class));
+        Intent intent = new Intent(context, HashCatServiceOld.class);
+        intent.putExtra(HashCatService.ARG_PATH,
+                context.getFilesDir().toString() + "/hashcat");
+        context.startService(intent);
     }
 
+    // Stop service
     void stop(Context context) {
-        context.stopService(new Intent(context, HashCatService.class));
+        context.stopService(new Intent(context, HashCatServiceOld.class));
     }
 
+    // Bind to service
     void bind(Context context) {
-        Intent intent = new Intent(context, HashCatService.class);
+        Intent intent = new Intent(context, HashCatServiceOld.class);
+
+        // Setup event listener
+        intent.putExtra(HashCatService.ARG_RECEIVER,
+                new ResultReceiver(new Handler(Looper.getMainLooper())) {
+                    @Override
+                    protected void onReceiveResult(int resultCode, Bundle resultData) {
+                        onServiceEvent(resultCode, resultData);
+                    }
+                });
+
         context.bindService(intent, this, Context.BIND_AUTO_CREATE);
     }
 
+    // Unbind from service
     void unbind(Context context) {
         context.unbindService(this);
     }
 
-    void submit(Consumer<HashCatService> fn) {
-        if (hashCatService != null)
-            fn.accept(hashCatService);
-        else
-            runQueue.add(fn);
+    // Event from service
+    private void onServiceEvent(int eventCode, Bundle eventData) {
+        switch (eventCode) {
+            case HashCatService.EVENT_CODE_ERROR:
+                setError(eventData.getString(HashCatService.EVENT_ARG_ERROR));
+                break;
+        }
     }
 
-    void setErrorListener(HashCatService.ErrorListener listener) {
-        submit(service -> service.setErrorListener(listener));
+    // Submit message to service
+    private void submit(Message msg) {
+        Consumer<Messenger> fn = m -> {
+            try {
+                messenger.send(msg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                setError(e.getMessage());
+            }
+        };
+        if (messenger != null)
+            fn.accept(messenger);
+        else
+            sendQueue.add(fn);
+    }
+
+    // Notify listener about error
+    private void setError(String err) {
+        if (errorListener != null)
+            errorListener.onError(err);
+        else
+            Log.e(HashCatInterface.class.getName(), err);
+    }
+
+    void setErrorListener(ErrorListener listener) {
+        errorListener = listener;
     }
 
     void start(Job... jobs) {
@@ -77,7 +144,13 @@ public class HashCatInterface implements ServiceConnection {
 
     // Start or queue processing with specified jobs
     void start(List<Job> jobs) {
-        submit(service -> service.start(jobs));
+        Message msg = Message.obtain(null, HashCatService.MSG_START_JOBS);
+        Bundle args = new Bundle();
+
+        args.putParcelableArrayList(HashCatService.ARG_JOB_LIST, new ArrayList<>(jobs));
+
+        msg.setData(args);
+        submit(msg);
     }
 
     void stop(Job... jobs) {
@@ -85,6 +158,29 @@ public class HashCatInterface implements ServiceConnection {
     }
 
     void stop(List<Job> jobs) {
-        submit(service -> service.stop(jobs));
+        Message msg = Message.obtain(null, HashCatService.MSG_STOP_JOBS);
+        Bundle args = new Bundle();
+
+        args.putParcelableArrayList(HashCatService.ARG_JOB_LIST, new ArrayList<>(jobs));
+
+        msg.setData(args);
+        submit(msg);
+    }
+
+    // Should be called whenever settings has been altered
+    void updateSettings() {
+        Message msg = Message.obtain(null, HashCatService.MSG_SET_SETTINGS);
+        Bundle settings = new Bundle();
+
+        String[] keys = {
+                HashCatService.SETTING_POWER_USAGE,
+                HashCatService.SETTING_REFRESH_INTERVAL,
+        };
+
+        for (String key : keys)
+            settings.putString(key, App.settings().getString(key, null));
+
+        msg.setData(settings);
+        submit(msg);
     }
 }

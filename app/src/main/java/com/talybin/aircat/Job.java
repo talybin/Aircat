@@ -2,6 +2,8 @@ package com.talybin.aircat;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,7 +17,7 @@ import androidx.room.TypeConverters;
 import java.util.Objects;
 
 @Entity(tableName = "job_table")
-public class Job {
+public class Job implements Parcelable {
 
     public enum State {
         NOT_RUNNING,
@@ -50,7 +52,7 @@ public class Job {
     }
 
     public interface ProgressListener {
-        void onProgressChange(Job job, HashCatService.Progress progress);
+        void onProgressChange(Job job, HashCatServiceOld.Progress progress);
     }
 
     @PrimaryKey
@@ -92,7 +94,7 @@ public class Job {
     private StateListener stateListener = null;
 
     @Ignore
-    private HashCatService.Progress progress = null;
+    private HashCatServiceOld.Progress progress = null;
 
     @Ignore
     private ProgressListener progressListener = null;
@@ -208,11 +210,11 @@ public class Job {
     }
 
     @Nullable
-    HashCatService.Progress getProgress() {
+    HashCatServiceOld.Progress getProgress() {
         return progress;
     }
 
-    void setProgress(HashCatService.Progress progress) {
+    void setProgress(HashCatServiceOld.Progress progress) {
         this.progress = progress;
         if (progressListener != null)
             progressListener.onProgressChange(this, progress);
@@ -220,5 +222,41 @@ public class Job {
 
     private void writeChanges() {
         JobManager.getInstance().update(this);
+    }
+
+    private Job(Parcel in) {
+        pmkId = in.readString();
+        ssid = in.readString();
+        apMac = in.readString();
+        clientMac = in.readString();
+        uri = in.readParcelable(Uri.class.getClassLoader());
+        password = in.readString();
+    }
+
+    public static final Creator<Job> CREATOR = new Creator<Job>() {
+        @Override
+        public Job createFromParcel(Parcel in) {
+            return new Job(in);
+        }
+
+        @Override
+        public Job[] newArray(int size) {
+            return new Job[size];
+        }
+    };
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(pmkId);
+        dest.writeString(ssid);
+        dest.writeString(apMac);
+        dest.writeString(clientMac);
+        dest.writeParcelable(uri, flags);
+        dest.writeString(password);
     }
 }
