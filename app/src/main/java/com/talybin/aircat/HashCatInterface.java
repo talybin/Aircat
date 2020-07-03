@@ -69,7 +69,7 @@ public class HashCatInterface implements ServiceConnection {
 
     // Start service
     void start(Context context) {
-        Intent intent = new Intent(context, HashCatServiceOld.class);
+        Intent intent = new Intent(context, HashCatService.class);
         intent.putExtra(HashCatService.ARG_PATH,
                 context.getFilesDir().toString() + "/hashcat");
         context.startService(intent);
@@ -77,12 +77,12 @@ public class HashCatInterface implements ServiceConnection {
 
     // Stop service
     void stop(Context context) {
-        context.stopService(new Intent(context, HashCatServiceOld.class));
+        context.stopService(new Intent(context, HashCatService.class));
     }
 
     // Bind to service
     void bind(Context context) {
-        Intent intent = new Intent(context, HashCatServiceOld.class);
+        Intent intent = new Intent(context, HashCatService.class);
 
         // Setup event listener
         intent.putExtra(HashCatService.ARG_RECEIVER,

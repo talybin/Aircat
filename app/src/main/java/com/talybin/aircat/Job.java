@@ -259,4 +259,10 @@ public class Job implements Parcelable {
         dest.writeParcelable(uri, flags);
         dest.writeString(password);
     }
+
+    @NonNull
+    public String toString() {
+        return String.format("pmk: %s, ssid: %s, ap: %s, client: %s, pass: %s",
+                pmkId, ssid, apMac, clientMac, password);
+    }
 }

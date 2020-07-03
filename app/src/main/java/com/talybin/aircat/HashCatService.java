@@ -103,6 +103,7 @@ public class HashCatService extends Service implements Handler.Callback {
     public int onStartCommand(Intent intent, int flags, int startId) {
         hashCatPath = intent.getStringExtra(ARG_PATH);
         //return Service.START_REDELIVER_INTENT;
+        Log.d("HashCatService", "---> path: " + hashCatPath);
         return Service.START_STICKY;
     }
 
@@ -145,6 +146,7 @@ public class HashCatService extends Service implements Handler.Callback {
             jobQueue.addAll(jobs);
 
             jobs.forEach(job -> Log.d("startJobs", "---> " + job));
+            setError(new Exception("hehe"));
         }
     }
 

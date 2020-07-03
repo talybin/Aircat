@@ -29,7 +29,8 @@
         </activity>
 
         <service
-            android:name=".HashCatServiceOld"
+            android:name=".HashCatService"
+            android:process=":hashCatProcess"
             android:label="HashCat service" />
     </application>
 
