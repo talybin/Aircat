@@ -21,6 +21,9 @@ import android.view.MenuItem;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 public class MainActivity extends AppCompatActivity
         implements SharedPreferences.OnSharedPreferenceChangeListener
 {
@@ -62,6 +65,13 @@ public class MainActivity extends AppCompatActivity
 
         // Apply settings
         onSharedPreferenceChanged(App.settings(), "keep_screen_on");
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                HashCatInterface.getInstance().start(MainActivity.this);
+            }
+        }, 3000);
     }
 
     @Override

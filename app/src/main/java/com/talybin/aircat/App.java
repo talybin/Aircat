@@ -28,12 +28,12 @@ public class App extends Application {
         poolExecutor = Executors.newCachedThreadPool();
 
         // Start hashcat service
-        HashCatInterface.getInstance().start(this);
+        //HashCatInterface.getInstance().start(this);
     }
 
     @Override
     public void onTerminate() {
-        HashCatInterface.getInstance().stop(this);
+        //HashCatInterface.getInstance().stop(this);
 
         poolExecutor.shutdownNow();
         instance = null;
