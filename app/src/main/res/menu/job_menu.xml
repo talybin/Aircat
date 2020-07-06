@@ -14,7 +14,7 @@
         app:showAsAction="always" />
     <item
         android:id="@+id/action_stop"
-        android:icon="@drawable/ic_stop_black_24dp"
+        android:icon="@drawable/ic_stop"
         android:title="@string/stop"
         app:showAsAction="always" />
     <item

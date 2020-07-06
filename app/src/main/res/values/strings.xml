@@ -17,7 +17,7 @@
     <string name="error_occurred">Error occurred</string>
     <string name="pmkid_not_supported">%1$s do not support PMKID</string>
     <string name="no_answer">No answer from %1$s</string>
-    <string name="complete_percent">Complete: %1$.1f%%</string>
+    <string name="complete_percent">%1$.1f%%</string>
     <string name="cracking_speed">Cracking speed: %1$,d H/s</string>
     <string name="estimated_time">Estimated time: %1$s</string>
     <string name="error_msg">Error: %1$s</string>
@@ -25,6 +25,15 @@
     <string name="stop">Stop</string>
     <string name="remove">Remove</string>
     <string name="connect">Connect</string>
+
+    <!-- Notification strings -->
+    <string name="running_jobs">Running jobs: %1$d</string>
+    <string name="finished_jobs">All jobs finished</string>
+
+    <!-- Notification categories -->
+    <string name="category_progress">Progress</string>
+    <string name="category_password">Password</string>
+    <string name="category_final_report">Final report</string>
 
     <!-- Bottom word list chooser -->
     <string name="last_used">Last used</string>

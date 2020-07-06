@@ -246,7 +246,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         Context context = requireContext();
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(job.getSsid() != null ? job.getSsid() : getString(R.string.hidden))
+        builder.setTitle(job.getSafeSSID())
                 .setMessage(job.getPassword())
                 // Connect
                 .setPositiveButton(R.string.connect, (dlg, id) -> connect())

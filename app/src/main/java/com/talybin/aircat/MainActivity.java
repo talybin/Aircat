@@ -58,20 +58,13 @@ public class MainActivity extends AppCompatActivity
         installDependencies();
 
         HashCatInterface.getInstance().setErrorListener(
-                err -> Toast.makeText(this, err, Toast.LENGTH_LONG).show());
+                err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
 
         // Listen to activity specific settings changes
         App.settings().registerOnSharedPreferenceChangeListener(this);
 
         // Apply settings
         onSharedPreferenceChanged(App.settings(), "keep_screen_on");
-
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                HashCatInterface.getInstance().start(MainActivity.this);
-            }
-        }, 3000);
     }
 
     @Override
@@ -142,23 +135,17 @@ public class MainActivity extends AppCompatActivity
             else
                 getWindow().clearFlags(flags);
         }
-        else
-            HashCatInterface.getInstance().updateSettings();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-
-        Log.d("MainActivity", "---> binding service");
         HashCatInterface.getInstance().bind(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-
-        Log.d("MainActivity", "---> unbinding service");
         HashCatInterface.getInstance().unbind(this);
     }
 }
