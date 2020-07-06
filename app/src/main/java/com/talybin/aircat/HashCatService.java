@@ -99,7 +99,7 @@ public class HashCatService extends Service {
 
     // Used in UI thread only
     private boolean isRunning = false;
-    private boolean isCancelling = false;
+    //private boolean isCancelling = false;
 
     private ErrorListener errorListener = null;
 
@@ -544,9 +544,11 @@ public class HashCatService extends Service {
     private NotificationCompat.Builder getNotificationBuilder(String channelId) {
         NotificationCompat.Builder builder;
 
+        // Note, MainActivity has android:launchMode="singleTask" attribute
         Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+                this, 0, notificationIntent, 0);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             builder = new NotificationCompat.Builder(this, channelId);

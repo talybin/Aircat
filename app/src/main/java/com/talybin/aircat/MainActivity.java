@@ -21,9 +21,6 @@ import android.view.MenuItem;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 public class MainActivity extends AppCompatActivity
         implements SharedPreferences.OnSharedPreferenceChangeListener
 {
@@ -71,7 +68,7 @@ public class MainActivity extends AppCompatActivity
     protected void onDestroy() {
         super.onDestroy();
         App.settings().unregisterOnSharedPreferenceChangeListener(this);
-        Log.d("AirCat", "---> onDestroy");
+        Log.d("MainActivity", "---> onDestroy");
     }
 
     @Override

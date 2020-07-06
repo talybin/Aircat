@@ -42,6 +42,7 @@ public class HashCatInterface implements ServiceConnection {
     public void onServiceConnected(ComponentName name, IBinder service) {
         hashCatService = ((HashCatService.LocalBinder) service).getService();
         serviceStarting = false;
+        Log.d("HashCatInterface", "---> service connected: " + hashCatService);
 
         // Invoke runnable queue
         sendQueue.forEach(fn -> fn.accept(hashCatService));
@@ -72,7 +73,14 @@ public class HashCatInterface implements ServiceConnection {
     // Bind to service
     public void bind(Context context) {
         Intent intent = new Intent(context, HashCatService.class);
-        context.bindService(intent, this, Context.BIND_AUTO_CREATE);
+
+        // if flag = Context.BIND_AUTO_CREATE is used it will bind the service
+        // and start the service, but if "0" is used, method will return true
+        // and will not start service until a call like startService(Intent)
+        // is made to start the service. One of the common use of "0" is in the
+        // case where an activity to connect to a local service if that service
+        // is running, otherwise you can start the service.
+        context.bindService(intent, this, 0);
     }
 
     // Unbind from service
