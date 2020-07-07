@@ -1,7 +1,6 @@
 package com.talybin.aircat;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -9,10 +8,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.fragment.app.Fragment;
@@ -27,13 +24,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static android.app.Activity.RESULT_OK;
-
 public class JobsFragment extends Fragment
         implements JobListAdapter.Listener, ActionMode.Callback
 {
-    private static final int NEW_JOB_ACTIVITY_REQUEST_CODE = 1;
-
     private JobListAdapter adapter;
     private FloatingActionButton createJobBut;
 
@@ -85,28 +78,6 @@ public class JobsFragment extends Fragment
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == NEW_JOB_ACTIVITY_REQUEST_CODE &&
-                resultCode == RESULT_OK &&
-                data != null)
-        {
-            String pmkId = data.getStringExtra(NewJobFragment.EXTRA_PMKID);
-            String ssid = data.getStringExtra(NewJobFragment.EXTRA_SSID);
-            String apMac = data.getStringExtra(NewJobFragment.EXTRA_AP_MAC);
-            String clMac = data.getStringExtra(NewJobFragment.EXTRA_CLIENT_MAC);
-
-            if (pmkId != null && apMac != null && clMac != null) {
-                JobManager.getInstance().add(new Job(
-                        pmkId, ssid, apMac, clMac, WordList.getDefault(), null));
-            }
-            else
-                Toast.makeText(getContext(), R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
-        }
-    }
-
-    @Override
     public void onItemClick(JobListAdapter.JobViewHolder holder) {
         int position = holder.getAdapterPosition();
         if (actionMode == null) {
@@ -154,14 +125,14 @@ public class JobsFragment extends Fragment
     }
 
     private void startSelectedJobs() {
-        HashCatInterface.getInstance().start(
+        HashCat.getInstance().start(
                 getSelectedJobs().stream()
                         .filter(job -> !job.isProcessing())
                         .collect(Collectors.toList()));
     }
 
     private void stopSelectedJobs() {
-        HashCatInterface.getInstance().stop(
+        HashCat.getInstance().stop(
                 getSelectedJobs().stream()
                         .filter(Job::isProcessing)
                         .collect(Collectors.toList()));

@@ -64,7 +64,7 @@ public class JobListAdapter
         }
 
         @Override
-        public void onProgressChange(Job job, HashCatService.Progress progress) {
+        public void onProgressChange(Job job, HashCat.Progress progress) {
             Context context = itemView.getContext();
 
             float percentComplete = 0;

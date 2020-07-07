@@ -2,8 +2,8 @@ package com.talybin.aircat;
 
 import android.app.Application;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
+import android.widget.Toast;
 
 import androidx.preference.PreferenceManager;
 
@@ -27,14 +27,12 @@ public class App extends Application {
         // reuse previously constructed threads when they are available
         poolExecutor = Executors.newCachedThreadPool();
 
-        // Start hashcat service
-        //HashCatInterface.getInstance().start(this);
+        HashCat.getInstance().setErrorListener(
+                err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
     }
 
     @Override
     public void onTerminate() {
-        //HashCatInterface.getInstance().stop(this);
-
         poolExecutor.shutdownNow();
         instance = null;
 

@@ -44,7 +44,6 @@ class JobManager {
         AppDatabase.databaseExecutor.execute(() -> {
             jobList = jobDao.getJobs();
             uiHandler.post(this::listUpdated);
-            updateFromService();
         });
 
         // Add test job
@@ -75,15 +74,9 @@ class JobManager {
         this.listener = listener;
     }
 
-    private void updateFromService() {
-        HashCatInterface.getInstance().getRunningJobs(jobs -> {
-            for (Job job : jobs) {
-                jobList.removeIf(j -> j.getPmkId().equals(job.getPmkId()));
-
-            }
-            jobList.addAll(jobs);
-            listUpdated();
-        });
+    void removeListeners() {
+        this.listener = null;
+        jobList.forEach(Job::removeListeners);
     }
 
     @NonNull
@@ -118,7 +111,7 @@ class JobManager {
     void remove(Job job) {
         if (jobList.remove(job)) {
             AppDatabase.databaseExecutor.execute(() -> jobDao.delete(job));
-            HashCatInterface.getInstance().stop(job);
+            HashCat.getInstance().stop(job);
             listUpdated();
         }
     }
@@ -134,7 +127,7 @@ class JobManager {
                 jobList.remove(job);
             }
         }
-        HashCatInterface.getInstance().stop(jobs);
+        HashCat.getInstance().stop(jobs);
         listUpdated();
     }
 }

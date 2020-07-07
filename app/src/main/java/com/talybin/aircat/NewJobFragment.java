@@ -37,11 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NewJobFragment extends Fragment implements ApListAdapter.ClickListener {
 
-    static final String EXTRA_PMKID = "PMKID";
-    static final String EXTRA_SSID = "SSID";
-    static final String EXTRA_AP_MAC = "AP_MAC";
-    static final String EXTRA_CLIENT_MAC = "CLIENT_MAC";
-
     private RecyclerView apList;
     private RecyclerView.Adapter adapter;
     private TextView emptyView;

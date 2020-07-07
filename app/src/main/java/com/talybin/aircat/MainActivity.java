@@ -19,7 +19,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity
         implements SharedPreferences.OnSharedPreferenceChangeListener
@@ -53,9 +52,6 @@ public class MainActivity extends AppCompatActivity
         JobManager.getInstance();
 
         installDependencies();
-
-        HashCatInterface.getInstance().setErrorListener(
-                err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
 
         // Listen to activity specific settings changes
         App.settings().registerOnSharedPreferenceChangeListener(this);
@@ -137,12 +133,14 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-        HashCatInterface.getInstance().bind(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        HashCatInterface.getInstance().unbind(this);
+
+        // Activity is about to be destroyed.
+        // Leaving listeners attached to UI result in crash.
+        JobManager.getInstance().removeListeners();
     }
 }

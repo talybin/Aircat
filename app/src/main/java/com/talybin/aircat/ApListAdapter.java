@@ -47,9 +47,9 @@ public class ApListAdapter extends RecyclerView.Adapter<ApListAdapter.ApViewHold
             itemView.setOnClickListener(this);
             itemView.setOnLongClickListener(this);
 
-            signal = (ImageView)itemView.findViewById(R.id.ap_item_signal);
-            ssid = (TextView)itemView.findViewById(R.id.ap_item_ssid);
-            info = (TextView)itemView.findViewById(R.id.ap_item_info);
+            signal = itemView.findViewById(R.id.ap_item_signal);
+            ssid = itemView.findViewById(R.id.ap_item_ssid);
+            info = itemView.findViewById(R.id.ap_item_info);
         }
 
         void bindData(ApInfo rec) {
