@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Aircat</string>
+    <string name="app_name" translatable="false">Aircat</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
-    <string name="jobs_fragment_label">Aircat</string>
+    <string name="jobs_fragment_label" translatable="false">Aircat</string>
     <string name="job_detail_fragment_label">Details</string>
     <string name="create_job_fragment_label">Select Access Point</string>
     <string name="next">Next</string>
