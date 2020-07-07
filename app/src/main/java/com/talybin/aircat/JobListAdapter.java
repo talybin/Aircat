@@ -60,7 +60,10 @@ public class JobListAdapter
 
         @Override
         public void onStateChange(Job job) {
-            state.setText(job.getState().toString());
+            Job.State jobState = job.getState();
+
+            state.setText(jobState.toString());
+            progressBar.setIndeterminate(jobState == Job.State.STARTING);
         }
 
         @Override

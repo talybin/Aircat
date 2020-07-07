@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -40,7 +39,7 @@ public class HashCatService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d("HashCatService", "---> onCreate: " + this);
+        //Log.d("HashCatService", "---> onCreate: " + this);
     }
 
     @Override
@@ -51,7 +50,7 @@ public class HashCatService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent.getAction();
-        Log.d("HashCatService", "---> onStartCommand: " + action + ", this: " + this);
+        //Log.d("HashCatService", "---> onStartCommand: " + action + ", this: " + this);
         if (action != null) {
             switch (action) {
                 case ACTION_START:
