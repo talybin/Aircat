@@ -24,7 +24,7 @@ class WordListManager {
 
     private WordListDao wordListDao;
 
-    private List<WordList> wordLists = new ArrayList<>();;
+    private List<WordList> wordLists = new ArrayList<>();
 
     private WordListManager() {
         wordListDao = AppDatabase.getDatabase(App.getContext()).wordListDao();

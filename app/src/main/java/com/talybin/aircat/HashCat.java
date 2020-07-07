@@ -71,7 +71,7 @@ public class HashCat {
     private ExecutorService poolExecutor;
 
     // Hashcat working directory
-    private File workingDir = null;
+    private File workingDir;
 
     // Handler for executing events on main ui thread
     private Handler handler =  new Handler();

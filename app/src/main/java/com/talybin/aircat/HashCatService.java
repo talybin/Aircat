@@ -10,6 +10,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -30,6 +32,8 @@ public class HashCatService extends Service {
     private static int dynamicId = PROGRESS_NOTIFICATION_ID + 1;
     private NotificationCompat.Builder progressBuilder = null;
 
+    private static PowerManager.WakeLock wakeLock = null;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -40,11 +44,19 @@ public class HashCatService extends Service {
     public void onCreate() {
         super.onCreate();
         //Log.d("HashCatService", "---> onCreate: " + this);
+
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (pm != null && wakeLock == null)
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HashCatService::lock");
+
+        enableWakeLock(App.settings().getBoolean("wake_lock", false));
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        enableWakeLock(false);
+        wakeLock = null;
     }
 
     @Override
@@ -91,6 +103,18 @@ public class HashCatService extends Service {
         Intent intent = new Intent(context, HashCatService.class);
 
         context.stopService(intent);
+    }
+
+    public static void enableWakeLock(boolean enable) {
+        if (wakeLock != null) {
+            if (wakeLock.isHeld()) {
+                if (!enable)
+                    wakeLock.release();
+            }
+            else if (enable)
+                wakeLock.acquire();
+            //Log.d("HashCatService", "---> wake lock: " + wakeLock.isHeld());
+        }
     }
 
     public static void showProgress(List<Job> jobs, HashCat.Progress progress) {

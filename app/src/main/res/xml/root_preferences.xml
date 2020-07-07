@@ -27,5 +27,10 @@
         android:key="keep_screen_on"
         android:title="@string/pref_keep_screen_on"
         app:iconSpaceReserved="false" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="wake_lock"
+        android:title="@string/pref_speed_in_sleeping_mode"
+        app:iconSpaceReserved="false" />
 
 </PreferenceScreen>

@@ -27,7 +27,7 @@ class Streams {
         }
         catch (IOException ignored) {
             is.reset();
-        };
+        }
         // Check if zip
         try {
             ZipInputStream zis = new ZipInputStream(is);
@@ -36,7 +36,7 @@ class Streams {
         }
         catch (IOException ignored) {
             is.reset();
-        };
+        }
         // Assume it is a plain text
         return is;
     }

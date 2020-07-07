@@ -58,13 +58,18 @@ public class MainActivity extends AppCompatActivity
 
         // Apply settings
         onSharedPreferenceChanged(App.settings(), "keep_screen_on");
+        //Log.d("MainActivity", "---> onCreate");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         App.settings().unregisterOnSharedPreferenceChangeListener(this);
-        Log.d("MainActivity", "---> onDestroy");
+
+        // Activity is about to be destroyed.
+        // Leaving listeners attached to UI result in crash.
+        JobManager.getInstance().removeListeners();
+        //Log.d("MainActivity", "---> onDestroy");
     }
 
     @Override
@@ -128,19 +133,9 @@ public class MainActivity extends AppCompatActivity
             else
                 getWindow().clearFlags(flags);
         }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        // Activity is about to be destroyed.
-        // Leaving listeners attached to UI result in crash.
-        JobManager.getInstance().removeListeners();
+        else if (key.equals("wake_lock")) {
+            boolean value = pref.getBoolean(key, false);
+            HashCatService.enableWakeLock(value);
+        }
     }
 }

@@ -67,4 +67,5 @@
     <string name="pref_power_consumption">Power consumption</string>
     <string name="pref_clear_password">Clear password on job start</string>
     <string name="pref_keep_screen_on">Keep screen on</string>
+    <string name="pref_speed_in_sleeping_mode">Full speed in sleeping mode</string>
 </resources>
