@@ -26,6 +26,10 @@ awk '!(count[$0]++)' filename
 
 Aircat has a built-in password list, rockyou.txt.gz. It contains most used passwords and prepared for WPA password length.
 
+### Build
+
+Use [Android Studio](https://developer.android.com/studio) to build the project.
+
 ### Latest release
 
 [Aircat version 1.0.](https://github.com/talybin/Aircat/releases/download/v1.0/aircat-1.0.apk)
