@@ -44,7 +44,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/job_item_progress_bar"
-            android:text="@string/not_running"
+            android:text="@string/state_not_running"
             android:textSize="12sp"
             android:textStyle="bold" />
 

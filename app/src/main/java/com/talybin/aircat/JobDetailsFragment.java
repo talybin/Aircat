@@ -218,7 +218,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
     private void startJob() {
         HashCat.getInstance().start(job);
         if (job.getState() == Job.State.NOT_RUNNING)
-            Toast.makeText(getContext(), R.string.failed_to_start_job, Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), R.string.err_job_start, Toast.LENGTH_LONG).show();
         else
             requireActivity().invalidateOptionsMenu();
     }
@@ -229,8 +229,14 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
     }
 
     private void removeJob() {
-        JobManager.getInstance().remove(job);
-        goBack();
+        new AlertDialog.Builder(requireContext())
+                .setMessage(R.string.remove_job)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    JobManager.getInstance().remove(job);
+                    goBack();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     @Override
@@ -270,7 +276,6 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
                 break;
 
             case R.id.job_details_hash_info:
-                Log.d("onViewClick", "---> job_details_hash_info");
                 if (copyToClipboard("hashcat", job.getHash()))
                     Toast.makeText(ctx, R.string.hash_clipped, Toast.LENGTH_SHORT).show();
                 break;
@@ -290,7 +295,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
             return true;
         }
         else
-            Toast.makeText(ctx, R.string.operation_failed, Toast.LENGTH_LONG).show();
+            Toast.makeText(ctx, R.string.err_operation_failed, Toast.LENGTH_LONG).show();
         return false;
     }
 
@@ -305,7 +310,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
         }
         catch (Exception e) {
             Toast.makeText(getContext(),
-                    getString(R.string.error_msg, e.getMessage()), Toast.LENGTH_SHORT).show();
+                    getString(R.string.err_message, e.getMessage()), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -314,7 +319,7 @@ public class JobDetailsFragment extends Fragment implements Job.StateListener {
 
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         if (wifiManager == null) {
-            Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.err_unknown, Toast.LENGTH_SHORT).show();
             return;
         }
 

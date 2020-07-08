@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:clickable="true"
-        android:drawableStart="@drawable/ic_search_black_24dp"
+        android:drawableStart="@drawable/ic_search"
         android:drawablePadding="10dp"
         android:drawableTint="#777777"
         android:focusable="true"

@@ -4,7 +4,7 @@
     android:id="@+id/wordlist_choose_item_text"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
-    android:drawableStart="@drawable/ic_insert_drive_file_black_24dp"
+    android:drawableStart="@drawable/ic_insert_drive_file"
     android:drawablePadding="10dp"
     android:drawableTint="#777777"
     android:paddingHorizontal="20dp"

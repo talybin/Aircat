@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -43,7 +42,6 @@ public class HashCatService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        //Log.d("HashCatService", "---> onCreate: " + this);
 
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null && wakeLock == null)
@@ -113,7 +111,6 @@ public class HashCatService extends Service {
             }
             else if (enable)
                 wakeLock.acquire();
-            //Log.d("HashCatService", "---> wake lock: " + wakeLock.isHeld());
         }
     }
 
@@ -179,7 +176,7 @@ public class HashCatService extends Service {
                 //PendingIntent.getForegroundService(this, 0, cancelIntent, 0);
 
         progressBuilder = getNotificationBuilder(getCategory(R.string.category_progress))
-                .setContentTitle(getString(R.string.starting))
+                .setContentTitle(getString(R.string.state_starting))
                 .setContentText(getString(R.string.complete_percent, 0.f))
                 // Add a progress bar
                 .setProgress(100, 0, true)

@@ -29,7 +29,7 @@
         android:layout_marginEnd="@dimen/fab_margin"
         android:layout_marginBottom="@dimen/fab_margin"
         android:clickable="true"
-        android:src="@drawable/ic_add_white_24dp"
+        android:src="@drawable/ic_add"
         app:rippleColor="@color/colorAccent" />
 
 </FrameLayout>

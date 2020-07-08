@@ -1,6 +1,7 @@
 package com.talybin.aircat;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -10,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.fragment.app.Fragment;
@@ -169,8 +171,7 @@ public class JobsFragment extends Fragment
         switch (item.getItemId()) {
 
             case R.id.action_remove:
-                JobManager.getInstance().remove(getSelectedJobs());
-                actionMode.finish();
+                removeJobs(getSelectedJobs());
                 return true;
 
             case R.id.action_select_all:
@@ -196,5 +197,16 @@ public class JobsFragment extends Fragment
         createJobBut.setVisibility(View.VISIBLE);
         adapter.clearSelections();
         actionMode = null;
+    }
+
+    private void removeJobs(List<Job> jobs) {
+        new AlertDialog.Builder(requireContext())
+                .setMessage(R.string.remove_selected_jobs)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    JobManager.getInstance().remove(jobs);
+                    actionMode.finish();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 }

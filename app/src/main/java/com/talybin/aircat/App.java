@@ -27,8 +27,8 @@ public class App extends Application {
         // reuse previously constructed threads when they are available
         poolExecutor = Executors.newCachedThreadPool();
 
-        HashCat.getInstance().setErrorListener(
-                err -> Toast.makeText(this, err.getMessage(), Toast.LENGTH_LONG).show());
+        HashCat.getInstance().setErrorListener(err ->
+                Toast.makeText(this, getString(R.string.err_message, err.getMessage()), Toast.LENGTH_LONG).show());
     }
 
     @Override

@@ -1,0 +1,10 @@
+<resources>
+    <!-- Потребляемая мощность -->
+    <string-array name="power_consumption_entries">
+        <item>Низкая</item>
+        <item>Экономичная</item>
+        <item>Высокая</item>
+        <item>Максимальная</item>
+    </string-array>
+
+</resources>

@@ -1,66 +1,67 @@
 <resources>
-    <string name="app_name" translatable="false">Aircat</string>
     <string name="action_settings">Settings</string>
-    <!-- Strings used for fragments for navigation -->
-    <string name="jobs_fragment_label" translatable="false">Aircat</string>
-    <string name="job_detail_fragment_label">Details</string>
-    <string name="create_job_fragment_label">Select Access Point</string>
-    <string name="next">Next</string>
-    <string name="enabling_wifi">Enabling WiFi</string>
-    <string name="connected_wifi">Connected to WiFi</string>
-    <string name="scanning">Scanning…</string>
-    <string name="no_jobs_yet">No jobs yet</string>
-    <string name="hidden">&lt;hidden&gt;</string>
-    <string name="getting_pmkid">Fetching PMKID. Please wait…</string>
-    <string name="extraction_error">Could not install tools</string>
-    <string name="extraction_error_msg">Tools needed to run application failed to install. Application may not work properly.</string>
-    <string name="error_occurred">Error occurred</string>
-    <string name="pmkid_not_supported">%1$s do not support PMKID</string>
-    <string name="no_answer">No answer from %1$s</string>
-    <string name="complete_percent">%1$.1f%%</string>
-    <string name="cracking_speed">Cracking speed: %1$,d H/s</string>
-    <string name="estimated_time">Estimated time: %1$s</string>
-    <string name="error_msg">Error: %1$s</string>
-    <string name="start">Start</string>
-    <string name="stop">Stop</string>
-    <string name="remove">Remove</string>
-    <string name="connect">Connect</string>
+    <string name="ap_mac">Access point MAC address</string>
+    <string name="app_name" translatable="false">Aircat</string>
 
-    <!-- Notification strings -->
-    <string name="running_jobs">Running jobs: %1$d</string>
-    <string name="finished_jobs">All jobs finished</string>
+    <string name="browse_file">Find on device</string>
 
     <!-- Notification categories -->
     <string name="category_progress">Progress</string>
     <string name="category_password">Password</string>
-    <string name="category_final_report">Final report</string>
 
-    <!-- Bottom word list chooser -->
-    <string name="last_used">Last used</string>
-    <string name="built_in">Built-in</string>
-    <string name="external">External</string>
+    <string name="choose_wordlist">Choose a wordlist</string>
+    <string name="client_mac">Client MAC address</string>
+    <string name="complete_percent" translatable="false">%1$.1f%%</string>
+    <string name="connect">Connect</string>
+    <string name="cracking_speed">Cracking speed: %1$,d H/s</string>
+    <string name="create_job_fragment_label">Select Access Point</string>
 
-    <!-- Job states -->
-    <string name="not_running">Not running</string>
-    <string name="queued">Queued</string>
-    <string name="starting">Starting</string>
-    <string name="running">Running</string>
-    <string name="stopping">Stopping</string>
+    <string name="extraction_error">Could not install tools</string>
+    <string name="extraction_error_msg">Tools needed to run application failed to install. Application may not work properly.</string>
+    <string name="enabling_wifi">Enabling WiFi</string>
+    <string name="err_job_start">Failed to start the job</string>
+    <string name="err_message">Error: %1$s</string>
+    <string name="err_operation_failed">Operation failed</string>
+    <string name="err_unknown">Error occurred</string>
+    <string name="estimated_time">Estimated time: %1$s</string>
+
+    <string name="getting_pmkid">Fetching PMKID. Please wait…</string>
+
+    <string name="hash_clipped">Hash in hashcat format stored in clip buffer</string>
+    <string name="hidden">&lt;hidden&gt;</string>
+
+    <string name="job_already_exist">Job already exist</string>
+    <string name="job_detail_fragment_label">Details</string>
+    <string name="jobs_fragment_label" translatable="false">Aircat</string>
+
+    <string name="no_answer">No answer from %1$s</string>
+    <string name="no_jobs_yet">No jobs yet</string>
+    <string name="not_implemented_yet">Not implemented yet</string>
 
     <string name="password">Password</string>
-    <string name="failed_to_start_job">Failed to start the job</string>
-    <string name="select_all">Select all</string>
-    <string name="browse_file">Find on device</string>
-    <string name="operation_failed">Operation failed</string>
-    <string name="not_implemented_yet">Not implemented yet</string>
     <string name="password_clipped">Password stored in clip buffer</string>
-    <string name="hash_clipped">Hash in hashcat format stored in clip buffer</string>
-    <string name="wordlist">Wordlist</string>
-    <string name="ap_mac">Access point MAC address</string>
-    <string name="client_mac">Client MAC address</string>
-    <string name="choose_wordlist">Choose a wordlist</string>
+    <string name="pmkid_not_supported">%1$s do not support PMKID</string>
+
+    <string name="remove">Remove</string>
+    <string name="remove_job">Remove job?</string>
+    <string name="remove_selected_jobs">Remove selected jobs?</string>
+    <string name="running_jobs">Running jobs: %1$d</string>
+
+    <string name="scanning">Scanning…</string>
+    <string name="select_all">Select all</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+
     <string name="title_activity_settings">Settings</string>
-    <string name="job_already_exist">Job already exist</string>
+
+    <string name="wordlist">Wordlist</string>
+
+    <!-- Job states -->
+    <string name="state_not_running">Not running</string>
+    <string name="state_queued">Queued</string>
+    <string name="state_starting">Starting</string>
+    <string name="state_running">Running</string>
+    <string name="state_stopping">Stopping</string>
 
     <!-- Preferences Titles -->
     <string name="pref_refresh_interval">Progress refresh interval in seconds</string>

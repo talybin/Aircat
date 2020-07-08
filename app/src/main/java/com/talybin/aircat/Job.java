@@ -30,15 +30,15 @@ public class Job {
             Context context = App.getContext();
             switch (this) {
                 case NOT_RUNNING:
-                    return context.getString(R.string.not_running);
+                    return context.getString(R.string.state_not_running);
                 case QUEUED:
-                    return context.getString(R.string.queued);
+                    return context.getString(R.string.state_queued);
                 case STARTING:
-                    return context.getString(R.string.starting);
+                    return context.getString(R.string.state_starting);
                 case RUNNING:
-                    return context.getString(R.string.running);
+                    return context.getString(R.string.state_running);
                 case STOPPING:
-                    return context.getString(R.string.stopping);
+                    return context.getString(R.string.state_stopping);
                 default:
                     return super.toString();
             }
