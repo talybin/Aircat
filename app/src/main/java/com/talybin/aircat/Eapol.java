@@ -1,5 +1,9 @@
 package com.talybin.aircat;
 
+import android.util.Log;
+
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Scanner;
@@ -9,6 +13,15 @@ public class Eapol {
     public String apMac = null;
     public String clientMac = null;
     public String pmkId = null;
+
+    @Override
+    public String toString() {
+        return "Eapol{" +
+                "apMac='" + apMac + '\'' +
+                ", clientMac='" + clientMac + '\'' +
+                ", pmkId='" + pmkId + '\'' +
+                '}';
+    }
 
     public boolean isValid() {
         if (apMac == null || clientMac == null || pmkId == null)
@@ -55,6 +68,25 @@ public class Eapol {
 
         if (data.length() >= 32)
             info.pmkId = data.substring(data.length() - 32);
+
+        return info;
+    }
+
+    static Eapol fromLogcatStream(ApInfo apInfo, InputStream is) throws IOException {
+
+        Eapol info = new Eapol();
+        String line = new BufferedReader(new InputStreamReader(is)).readLine();
+
+        Log.d("fetchEapol", "---> line [" + line + "]");
+
+        String pmkId = line.substring(line.lastIndexOf(':') + 1).replace(" ", "");
+
+        Log.d("fetchEapol", "---> pmkId [" + pmkId + "]");
+
+        info.apMac = apInfo.bssid;
+        // TODO get device mac
+        info.clientMac = null;
+        info.pmkId = pmkId;
 
         return info;
     }

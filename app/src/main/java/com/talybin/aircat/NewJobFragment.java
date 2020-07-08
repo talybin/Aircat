@@ -18,22 +18,28 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 
 public class NewJobFragment extends Fragment implements ApListAdapter.ClickListener {
 
@@ -157,6 +163,64 @@ public class NewJobFragment extends Fragment implements ApListAdapter.ClickListe
     }
 
     private Process fetchEapol(ApInfo apInfo, EapolListener callback) {
+        return fetchEapolLogcat(apInfo, callback);
+    }
+
+    private Process fetchEapolLogcat(ApInfo apInfo, EapolListener callback) {
+        Handler uiHandler = new Handler();
+        String[] args = {
+                "logcat",
+                // Filter on wpa_supplicant process
+                "-s", "wpa_supplicant",
+                // Filter lines by regex
+                "-e", "PMKID from Authenticator",
+                // Do not output "beginning of ..." messages
+                "-b", "main",
+                // Begin at the bottom
+                "-T", "1",
+        };
+        try {
+            Process process = Runtime.getRuntime().exec(args);
+            InputStream is = process.getInputStream();
+            int networkId = apInfo.connect(wifiManager);
+            // TODO read logcat on connection failed instead
+
+            BiConsumer<Eapol, Exception> onDone = (res, ex) -> {
+                process.destroy();
+
+                uiHandler.post(() -> {
+                    // Clean up
+                    wifiManager.removeNetwork(networkId);
+
+                    Log.d("fetchEapolLogcat", "---> " + res);
+
+                    if (ex != null)
+                        callback.onResult(null, ex.getMessage());
+                    else if (!res.isValid())
+                        callback.onResult(null, getString(R.string.pmkid_not_supported, apInfo.getSSID()));
+                    else
+                        callback.onResult(res, null);
+                });
+            };
+
+            App.getThreadPool().execute(() -> {
+                try {
+                    onDone.accept(Eapol.fromLogcatStream(apInfo, is), null);
+                }
+                catch (Exception err) {
+                    onDone.accept(null, err);
+                }
+            });
+
+            return process;
+        }
+        catch (Exception e) {
+            callback.onResult(null, e.getMessage());
+            return null;
+        }
+    }
+
+    private Process fetchEapolTcpDump(ApInfo apInfo, EapolListener callback) {
         Handler uiHandler = new Handler();
         String[] args = {
                 "su", "-c", App.getContext().getFilesDir() + "/tcpdump",
