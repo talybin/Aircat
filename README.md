@@ -1,6 +1,6 @@
 # Aircat
 
-WPA cracking tool for Android. Currently **requires root**.
+WPA cracking tool for Android. Ugly but functional. Currently **requires root**.
 
 ### What is special about this app?
 
