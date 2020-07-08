@@ -28,4 +28,4 @@ Aircat has a built-in password list, rockyou.txt.gz. It contains most used passw
 
 ### Latest release
 
-[Aircat version 1.0.](releases/download/v1.0/aircat-1.0.apk)
+[Aircat version 1.0.](https://github.com/talybin/Aircat/releases/download/v1.0/aircat-1.0.apk)
