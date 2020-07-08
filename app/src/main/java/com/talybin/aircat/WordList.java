@@ -42,7 +42,7 @@ public class WordList {
         this.nrWords = nrWords;
         this.lastUsed = lastUsed;
 
-        Log.d("WordList", "---> created: " + WordList.getFileName(uri) + ", words: " + nrWords + ", last used: " + lastUsed);
+        //Log.d("WordList", "---> created: " + WordList.getFileName(uri) + ", words: " + nrWords + ", last used: " + lastUsed);
     }
 
     @NonNull
@@ -80,7 +80,7 @@ public class WordList {
     }
 
     static Uri getDefault() {
-        String defaultPath = App.getContext().getFilesDir() + "/wordlists/english.gz";
+        String defaultPath = App.getContext().getFilesDir() + "/rockyou.txt.gz";
         return Uri.fromFile(new File(defaultPath));
     }
 
