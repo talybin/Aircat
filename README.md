@@ -13,7 +13,7 @@ Aircat establish a connection to selected AP with a simple password and listens 
 
 ### Supported word lists
 
-A word list file should contain a list of passwords separated by a white space (tab, next line, etc...). File may be a plain text or compressed by gzip or zip.
+A word list file should contain a list of passwords separated by next line (one password per line). File may be a plain text or compressed by gzip or zip.
 Note that a WPA password has length between 8 and 64. While this is not requirement for Aircat, removing all words less than 8 characters may slightly speed up the process.
 
 ```sh
